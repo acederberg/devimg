@@ -1,0 +1,18 @@
+- name: ""
+  hosts: all
+  remote_user: "{{ user.username }}"
+  tasks:
+    - name: Prepare the builder directory.
+      ansible.builtin.shell: "mkdir {{ user.homedir }}/Ansible/Build"
+- name: Get and build neovim.
+  hosts: all
+  remote_user: acederberg
+  tasks:
+    - name: Clone the repo
+      ansible.builtin.git: https://github.com/neovim/neovim.git
+      clone: yes
+      dest: "{{ user.homedir }}/Ansible/Build/Neovim"
+      depth: 1
+
+# make CMAKE_BUILD_TYPE=RelWithDebInfo
+# sudo make install
