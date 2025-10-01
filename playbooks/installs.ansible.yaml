@@ -1,8 +1,9 @@
-- name: "Create the Build Directory"
+# vi: set ft=yaml.ansible :
+- name: "Create the Ansible Directory"
   hosts: debian
   remote_user: "{{ user.username }}"
   tasks:
-    - name: Prepare the builder directory.
+    - name: Prepare the ansible directory.
       ansible.builtin.shell: "mkdir --parent {{ user.homedir }}/Ansible/Build"
 - name: Update and Upgrade, Required Deps
   become: true
