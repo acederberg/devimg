@@ -1,4 +1,20 @@
 all:
+  vars:
+    libvirt:
+      network:
+        name: 'devimg'
+        bridge: virbr10
+      domains:
+        - name: 'devimg-debian-13'
+          memory: 4096
+          image: /var/lib/libvirt/images/debian-13-nocloud-amd64-cloudinit.qcow2
+          # NOTE(acederberg): Preseed only, not useful for cloud images.
+          # root:
+          #   password_sha256: 044081d2b0a83cd5f531b1a9ee56bcb4d3f8ec8cfdcae1eccc84534e78d05b41
+          # user:
+          #   username: acederberg
+          #   fullname: Adrian Cederberg
+          #   password_sha256: 044081d2b0a83cd5f531b1a9ee56bcb4d3f8ec8cfdcae1eccc84534e78d05b41
   hosts:
     localhost:
       ansible_connection: local

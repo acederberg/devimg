@@ -1,0 +1,59 @@
+# vi: set ft=yaml.ansible :
+#
+#
+#
+- name: Setup Libvirt Network
+  hosts: localhost
+  tasks:
+    # - name: Print it
+    #   ansible.builtin.debug:
+    #     var: libvirt
+    # - name: Make sure that 'libvirt-devel' is installed.
+    #   become: true
+    #   ansible.builtin.dnf:
+    #     name: libvirt-devel
+    #     state: present
+    #     update_cache: true
+    # - name: Make sure that 'libvirt-python' is installed.
+    #   ansible.builtin.pip:
+    #     name: libvirt-python
+    #     state: present
+    - name: Declare Network
+      community.libvirt.virt_net:
+        command: define
+        name: "{{ libvirt.network.name }}"
+        xml: "{{ lookup('template', 'libvirt/network.xml.j2') }}"
+    - name: Start Network
+      community.libvirt.virt_net:
+        command: start
+        name: "{{ libvirt.network.name }}"
+        autostart: true
+- name: Setup Libvirt Domain
+  hosts: localhost
+  vars:
+    domain: "{{ libvirt.domains[0] }}"
+    storage: '/var/lib/libvirt/images/{{ libvirt.domains[0].name }}.qcow2'
+  tasks:
+    - name: Check for storage block.
+      ansible.builtin.stat:
+        path: "{{ storage }}"
+      register: storage_status
+    - name: Create the Storage Block
+      when: not storage_status.stat.exists
+      become: true
+      ansible.builtin.shell: "{{ lookup('template', 'libvirt/mk-qcow.sh.j2') }}"
+    - name: Declare VM
+      community.libvirt.virt:
+        command: define
+        name: '{{ domain.name }}'
+        xml: "{{ lookup('template', 'libvirt/domain.xml.j2') }}"
+    - name: Start VM
+      community.libvirt.virt:
+        command: start
+        name: '{{ domain.name }}'
+        state: running
+
+# - name: Complete the install steps, Eject bootable media
+#   hosts: localhost
+#   tasks:
+#     - name: Complete install steps

@@ -1,0 +1,10 @@
+# vi: set ft=bash :
+
+storage='{{ storage }}'
+storage_dir=$(dirname $storage)
+
+[[ -d $storage_dir ]] || mkdir $storage_dir --parents
+[[ -f $storage ]] || qemu-img create -f qcow2 $storage 100G
+
+chown "$( id --user qemu ):$( id --group qemu )" '{{ storage }}'
+

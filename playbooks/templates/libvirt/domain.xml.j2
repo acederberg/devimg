@@ -1,0 +1,43 @@
+{# vi: set ft=jinja : #}
+<domain type='kvm'>
+  <name>{{ domain.name }}</name>
+  <memory unit='MiB'>{{ domain.memory }}</memory>
+  <vcpu placement='static'>2</vcpu>
+  <cpu mode='host-passthrough'/>
+  <os>
+    <type arch='x86_64'>hvm</type>
+    <boot dev='cdrom'/>
+    <boot dev='hd'/>
+  </os>
+
+  <devices>
+    <!-- Network interface -->
+    <interface type='network'>
+      <source network='{{ libvirt.network.name }}'/>
+      <model type='virtio'/>
+    </interface>
+
+    <!-- Bootable media -->
+    <disk type='file' device='cdrom'>
+      <driver name='qemu' type='raw'/>
+      <source file='{{ domain.image }}'/>
+      <target dev='sda' bus='sata'/>
+      <readonly/>
+    </disk>
+
+    <!-- Actual block storage. -->
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2'/>
+      <source file='{{ storage }}'/>
+      <target dev='vda' bus='virtio'/>
+    </disk>
+
+    <!-- Graphics console -->
+    <graphics type='vnc' port='-1' autoport='yes'/>
+    <console type='pty' tty='dev/pts/0'>
+      <source path='/dev/pts/0' />
+      <target type='serial' port='0' />
+      <alias name='serial0' />
+    </console>
+  </devices>
+</domain>

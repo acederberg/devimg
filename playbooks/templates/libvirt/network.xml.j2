@@ -1,0 +1,12 @@
+{# vi: set ft=jinja : #}
+<network>
+  <name>{{ libvirt.network.name }}</name>
+  <forward mode='nat'/>
+  <!-- `virbr0` is the virtual bridge. See `ifconfig` -->
+  <bridge name='{{ libvirt.network.bridge }}' stp='on' delay='0'/>
+  <ip address='192.168.100.1' netmask='255.255.255.0'>
+    <dhcp>
+      <range start='192.168.100.100' end='192.168.100.200'/>
+    </dhcp>
+  </ip>
+</network>

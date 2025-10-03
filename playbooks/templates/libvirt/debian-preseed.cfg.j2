@@ -1,0 +1,58 @@
+# NOTE(acederberg): This is used to help avoid the annoying install step.
+#                   See:
+#                   - The OG preseed: https://www.debian.org/releases/trixie/example-preseed.txt
+#                   - About crypt(3): https://man7.org/linux/man-pages/man3/crypt.3.html
+#                   - About preseed file: https://www.debian.org/releases/stable/amd64/apbs04.en.html
+
+
+# Localization
+d-i debian-installer/locale string en_US.UTF-8
+d-i keyboard-configuration/xkb-keymap select us
+
+# Network
+d-i netcfg/choose_interface select auto
+d-i netcfg/get_hostname string {{ domain.name }}
+
+{% if domain.domain_name %}
+  d-i netcfg/get_domain string {{ domain.name }}
+{% endif %}
+
+# Disable that annoying WEP key dialog.
+d-i netcfg/wireless_wep string
+
+
+# Mirror settings
+d-i mirror/country string US
+d-i mirror/http/hostname string http.us.debian.org
+d-i mirror/http/directory string /debian
+d-i mirror/http/proxy deb.debian.org
+
+
+# Accounts
+d-i passwd/root-password-crypted {{ domain.root.password_sha256 }} [sha256]
+d-i passwd/user-fullname string {{ domain.user.fullname }}
+d-i passwd/username string {{ domain.user.username }}
+d-i passwd/user-password-crypted {{ domain.user.password_sha256 }} [sha256]
+
+# Clock and time zone setup
+d-i clock-setup/utc boolean true
+d-i time/zone string US/Mountain
+d-i clock-setup/ntp boolean true
+
+### Partitioning
+d-i partman-auto/choose_recipe select atomic
+
+# This makes partman automatically partition without confirmation, provided
+# that you told it what to do using one of the methods above.
+d-i partman-partitioning/confirm_write_new_label boolean true
+d-i partman/choose_partition select finish
+d-i partman/confirm boolean true
+d-i partman/confirm_nooverwrite boolean true
+
+
+### Apt setup
+d-i apt-setup/cdrom/set-first boolean false
+d-i grub-installer/only_debian boolean true
+d-i grub-installer/with_other_os boolean true
+d-i finish-install/reboot_in_progress note
+
