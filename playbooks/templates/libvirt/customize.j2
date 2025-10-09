@@ -1,0 +1,14 @@
+{# vi: set ft=jinja : #}
+
+
+virt-customize \
+  -a {{ dest_qemu }} \
+  --root-password=random \
+  --run-command "id --user acederberg || useradd -m -s /bin/bash {{ domain.init.user.username }}" \
+  --run-command "echo '{{ domain.init.user.username }}:{{ domain.init.user.password_crypt }}' | chpasswd --encrypted" \
+  --firstboot-command "systemctl enable serial-getty@ttyS0.service || true" \
+  --firstboot-command "systemctl disable --now cloud-init.service cloud-init-local.service cloud-config.service cloud-final.service || true" \
+  --firstboot-command '{{ (ansible_os_family == "Debian") |
+                    ternary("apt-get update -y && apt-get purge -y cloud-init && apt-get autoremove -y",
+                            "dnf remove -y cloud-init || yum remove -y cloud-init") }}' \
+  --ssh-inject '{{ domain.init.user.username }}:string:"{{ domain.init.user.sshpubkey }}"' \

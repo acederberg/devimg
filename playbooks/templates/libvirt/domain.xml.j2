@@ -17,20 +17,32 @@
       <model type='virtio'/>
     </interface>
 
-    <!-- Bootable media -->
-    <disk type='file' device='cdrom'>
-      <driver name='qemu' type='raw'/>
-      <source file='{{ domain.image }}'/>
-      <target dev='sda' bus='sata'/>
-      <readonly/>
-    </disk>
+    {# There are different ways to handle booting these various medias.
 
-    <!-- Actual block storage. -->
-    <disk type='file' device='disk'>
-      <driver name='qemu' type='qcow2'/>
-      <source file='{{ storage }}'/>
-      <target dev='vda' bus='virtio'/>
-    </disk>
+    In the inventory, use `kind` to specify which variety can be used.
+    #}
+    {% if domain.image.kind == "cd" %}
+      <!-- Bootable media -->
+      <disk type='file' device='cdrom'>
+        <driver name='qemu' type='raw'/>
+        <source file='{{ domain.image.src }}'/>
+        <target dev='sda' bus='sata'/>
+        <readonly/>
+      </disk>
+
+      <!-- Actual block storage. -->
+      <disk type='file' device='disk'>
+        <driver name='qemu' type='qcow2'/>
+        <source file='{{ storage }}'/>
+        <target dev='vda' bus='virtio'/>
+      </disk>
+    {% elif domain.image.kind == "cloud" %}
+      <disk type='file' device='disk'>
+        <drive name='qemu' type='qcow2'/>
+        <source file='{{ domain.image.src }}'/>
+        <target dev='sda' bus='sata'/>
+      </disk>
+    {% endif %}
 
     <!-- Graphics console -->
     <graphics type='vnc' port='-1' autoport='yes'/>

@@ -95,3 +95,70 @@
         dest: "{{ user.homedir }}/.pyenv"
         depth: 1
         version: v2.6.8
+    - name: What was I supposed to do with this git repository?
+- name: ArgoCD
+  hosts: all
+  vars:
+    argocd: 'tools.argocd'
+  tasks:
+    - name: Download ArgoCD into bin
+      become: true
+      ansible.builtin.get_url:
+        url: https://github.com/{{ argocd.repo }}/releases/download/{{ argocd.version }}/argocd-linux-{{ arch }}
+        checksum: '{{ argocd.checksum }}'
+        dest: /usr/local/bin
+        # All for by owner and group. Executable and readable for others.
+        mode: '0775'
+- name: Add Helm
+  vars:
+    helm: 'tools.helm'
+    dest-archive: "{{ user.homedir }}/archives/helm.tar.gz"
+    dest-unarchive: "{{ user.homedir }}/archives/helm"
+  tasks:
+    - name: Download Helm
+      ansible.builtin.get_url:
+        url: https://get.helm.sh/helm-v{{ version }}-linux-{{ arch }}.tar.gz
+        checksum: '{{ argocd.checksum }}'
+        dest: '{{ dest-archive }}'
+    - name: Extract Helm
+      ansible.builtin.unarchive:
+        dest: '{{ dest-unarchive }}'
+        src: '{{ dest-archive }}'
+    - name: Move Helm
+      become: true
+      ansible.builtin.copy:
+        src: '{{ dest-unarchive }}/helm'
+        dest: '/usr/local/bin'
+        checksum: '{{ argocd.checksum }}'
+        mode: '0775'
+- name: Add KubeCtl
+  hosts: all
+  vars:
+    kubectl: 'tools.kubectl'
+  tasks:
+    - name: Download KubeCtl into bin
+      ansible.builtin.get_url:
+        url: https://dl.k8s.io/release/v{{ kubectl.version }}/bin/linux/{{ arch }}/kubectl"
+        checksum: "{{ kubectl.checksum }}"
+        dest: /usr/local/bin
+        mode: '0775'
+- name: Add Terraform
+  hosts: all
+  vars:
+    terraform: 'tools.terraform'
+    dest-archive: "{{ user.homedir }}/archives/terraform.zip"
+    dest-unarchive: "{{ user.homedir }}/archives/terraform"
+  tasks:
+    - name: Download Terraform
+      ansible.builtin.get_url:
+        url: https://releases.hashicorp.com/terraform/{{ terraform.version }}/terraform_{{ terraform.version }}_linux_{{ arch }}.zip
+        dest: '{{ dest-archive }}'
+    - name: Extract Terraform
+      ansible.builtin.unarchive:
+        dest: '{{ dest-archive }}'
+        src: '{{ dest-archive }}'
+    - name: Move Terraform into bin
+      become: true
+      ansible.builtin.copy:
+        src: '{{ dest-archive }}/terraform'
+        mode: '0775'

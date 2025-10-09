@@ -1,7 +1,28 @@
 # vi: set ft=yaml.ansible :
-#
-#
-#
+- name: Download the Image
+  hosts: localhost
+  # pre_tasks:
+  #   - name: Ensure `virt-customize`.
+  #     ansible.builtin.package:
+  #       name: libguestfs-tools-c
+  #       state: present
+  tasks:
+    - name: Ensure images directory.
+      block:
+        - name: Check images dir
+          ansible.builtin.stat:
+            path: "{{ libvirt.images_dir }}"
+          register: image_dir
+        - ansible.builtin.debug:
+            var: image_dir
+        - name: Create Images Dir
+          when: not image_dir.stat.exists
+          ansible.builtin.shell: mkdir --parents {{ libvirt.images_dir }}
+    - name: Download and customize images.
+      ansible.builtin.include_tasks: virt-customize.yaml
+      loop: '{{ libvirt.domains }}'
+      loop_control:
+        loop_var: domain
 - name: Setup Libvirt Network
   hosts: localhost
   tasks:
