@@ -1,5 +1,6 @@
 all:
   vars:
+    ansible_python_interpreter: /home/acederberg/Projects/DevImg/.venv/bin/python3
     arch: amd64
     tools:
       argocd:
@@ -22,6 +23,9 @@ all:
       network:
         name: 'devimg'
         bridge: virbr10
+      ansible:
+        username: ansible
+        sshpubkey:
       domains:
         - name: 'devimg-debian-13'
           memory: 4096
@@ -37,7 +41,7 @@ all:
             user:
               username: acederberg
               fullname: Adrian Cederberg
-              password_crypt: $1$2D0a4fuw$1sHeJnM54632YsId6POwV1
+              password_crypt: $6$PM0h9EKabaA/GqiG$Snn4ooouZ1HePuuYobQyVhBWFZih/ppS27QKZ5oI.5/5/3PfS7JHtvNYomZFRze0Rw/j4yf5NN1rZPpX8Tfk20
               sshpubkey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKrQPues3Mc/7exenjylqV9Rae+RklrLB9Rz3hgRLEKB adrn.cederberg123@gmail.com"
   hosts:
     localhost:

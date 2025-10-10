@@ -1,0 +1,30 @@
+# vi: set ft=yaml.ansible : 
+- block:
+    - ansible.builtin.set_fact:
+        filename: "{{ domain.image.src | urlsplit('path') |  split('/') | last }}"
+    - ansible.builtin.set_fact:
+        storage: '/var/lib/libvirt/images/{{ domain.name }}.qcow2'
+        image_path: "/var/lib/libvirt/images/{{ filename }}"
+- ansible.builtin.debug:
+    var: domain.image
+- when: domain.image.kind == "cdrom"
+  block:
+    - name: Check for storage block.
+      ansible.builtin.stat:
+        path: "{{ storage }}"
+      register: storage_status
+    - name: Create the Storage Block
+      when: not storage_status.stat.exists
+      become: true
+      ansible.builtin.shell: "{{ lookup('template', 'libvirt/mk-qcow.sh.j2') }}"
+- name: Declare VM
+  community.libvirt.virt:
+    command: define
+    name: '{{ domain.name }}'
+    xml: "{{ lookup('template', 'libvirt/domain.xml.j2') }}"
+- name: Start VM
+  become: true
+  community.libvirt.virt:
+    command: start
+    name: '{{ domain.name }}'
+    state: running

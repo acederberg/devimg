@@ -1,44 +1,31 @@
 # vi: set ft=yaml.ansible :
-- name: Download the Image
-  hosts: localhost
-  # pre_tasks:
-  #   - name: Ensure `virt-customize`.
-  #     ansible.builtin.package:
-  #       name: libguestfs-tools-c
-  #       state: present
-  tasks:
-    - name: Ensure images directory.
-      block:
-        - name: Check images dir
-          ansible.builtin.stat:
-            path: "{{ libvirt.images_dir }}"
-          register: image_dir
-        - ansible.builtin.debug:
-            var: image_dir
-        - name: Create Images Dir
-          when: not image_dir.stat.exists
-          ansible.builtin.shell: mkdir --parents {{ libvirt.images_dir }}
-    - name: Download and customize images.
-      ansible.builtin.include_tasks: virt-customize.yaml
-      loop: '{{ libvirt.domains }}'
-      loop_control:
-        loop_var: domain
 - name: Setup Libvirt Network
   hosts: localhost
+  pre_tasks:
+    # NOTE(acederberg): Because of absolute stupidity, it is not possible to 
+    #                   do this stuff in a virtual environment.
+    #
+    #                   See:
+    #
+    #                   - https://github.com/ansible/ansible/issues/64689#issuecomment-552948004
+    - name: Get `libvirt` Deps
+      when: ansible_python_interpreter == "/usr/bin/python3"
+      block:
+        - name: Make sure that 'libvirt-devel' is installed.
+          become: true
+          ansible.builtin.dnf:
+            name: libvirt-devel
+            state: present
+            update_cache: true
+        - name: Make sure that 'libvirt-python' is installed.
+          ansible.builtin.pip:
+            name: libvirt-python
+            state: present
+        - name: Ensure `virt-customize`.
+          ansible.builtin.package:
+            name: libguestfs-tools-c
+            state: present
   tasks:
-    # - name: Print it
-    #   ansible.builtin.debug:
-    #     var: libvirt
-    # - name: Make sure that 'libvirt-devel' is installed.
-    #   become: true
-    #   ansible.builtin.dnf:
-    #     name: libvirt-devel
-    #     state: present
-    #     update_cache: true
-    # - name: Make sure that 'libvirt-python' is installed.
-    #   ansible.builtin.pip:
-    #     name: libvirt-python
-    #     state: present
     - name: Declare Network
       community.libvirt.virt_net:
         command: define
@@ -49,32 +36,46 @@
         command: start
         name: "{{ libvirt.network.name }}"
         autostart: true
-- name: Setup Libvirt Domain
-  hosts: localhost
-  vars:
-    domain: "{{ libvirt.domains[0] }}"
-    storage: '/var/lib/libvirt/images/{{ libvirt.domains[0].name }}.qcow2'
+# NOTE(acederberg): Generate SSH keys for ansible, set up hostnames, and verify connectivity.
+- name: Configure host
   tasks:
-    - name: Check for storage block.
-      ansible.builtin.stat:
-        path: "{{ storage }}"
-      register: storage_status
-    - name: Create the Storage Block
-      when: not storage_status.stat.exists
-      become: true
-      ansible.builtin.shell: "{{ lookup('template', 'libvirt/mk-qcow.sh.j2') }}"
-    - name: Declare VM
-      community.libvirt.virt:
-        command: define
-        name: '{{ domain.name }}'
-        xml: "{{ lookup('template', 'libvirt/domain.xml.j2') }}"
-    - name: Start VM
-      community.libvirt.virt:
-        command: start
-        name: '{{ domain.name }}'
-        state: running
-
-# - name: Complete the install steps, Eject bootable media
-#   hosts: localhost
-#   tasks:
-#     - name: Complete install steps
+    - name: Generate an sshkey for ansible
+      block:
+        - name: Ensure
+          community.crypto.openssh_keypair:
+            path: "{{ '~/.ssh/ansible' | realpath }}"
+            mode: "0440"
+            type: ed25519
+            state: present
+          register: ansible.sshkeys
+        - name: Debug
+          ansible.builtin.debug:
+            var: ansible.sshkeys
+- name: Create Virtual Machines
+  hosts: localhost
+  tasks:
+    - name: Create Images Directory
+      block:
+        - ansible.builtin.stat:
+            path: "{{ libvirt.images_dir }}"
+          register: image_dir
+        - name: Create Images Dir
+          when: not image_dir.stat.exists
+          ansible.builtin.shell: mkdir --parents {{ libvirt.images_dir }}
+    - name: Download and Customize Images
+      ansible.builtin.include_tasks: virt-customize.yaml
+      loop: '{{ libvirt.domains }}'
+      loop_control:
+        loop_var: domain
+    - name: Start VMs
+      ansible.builtin.include_tasks: virt-up.yaml
+      loop: '{{ libvirt.domains }}'
+      loop_control:
+        loop_var: domain
+        # NOTE(acederberg): save for later, disk only setup continuation
+        # - name: Complete the install steps, Eject bootable media
+        #   hosts: localhost
+        #   tasks:
+        #     - name: Complete install steps
+- name: Complete Test Seup
+  ansible.builtin.include_tasks: virt-finalize.yaml
