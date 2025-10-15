@@ -1,0 +1,13 @@
+{# vi: set ft=jinja : #}
+
+{# This command must be wrapped in single quotes to avoid problems with $ formatting #}
+firstboot_command='{% include './customize-first-boot.sh.j2' %}'
+virt-customize \
+  -a {{ dest_qemu }} \
+  --root-password=password:root \
+  --run-command "useradd -m -s /bin/bash {{ domain.init.user.username }}" \
+  --run-command "useradd -m -s /bin/bash {{ libvirt.ansible.username }}" \
+  --firstboot-command "$firstboot_command" \
+  --ssh-inject '{{ libvirt.ansible.username }}:string:"{{ domain.init.user.sshpubkey }}"' \
+  --ssh-inject '{{ domain.init.user.username }}:string:"{{ domain.init.user.sshpubkey }}"' \
+

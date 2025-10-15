@@ -1,0 +1,29 @@
+# vi: set ft=yaml.ansible :
+- community.libvirt.virt:
+    command: list_vms
+    state: running
+  register: domains_running
+- ansible.builtin.debug:
+    var: domains_running
+- name: Destroy VM
+  when: domain.name in domains_running.list_vms
+  community.libvirt.virt:
+    command: destroy
+    name: '{{ domain.name }}'
+- community.libvirt.virt:
+    command: list_vms
+    state: shutdown
+  register: domains_destroyed
+- ansible.builtin.debug:
+    var: domains_destroyed
+- name: Undefine VM
+  when: domain.name in domains_destroyed.list_vms
+  community.libvirt.virt:
+    command: undefine
+    name: '{{ domain.name }}'
+- block:
+    - ansible.builtin.set_fact:
+        storage: '/var/lib/libvirt/images/{{ domain.name }}.qcow2'
+    - ansible.builtin.file:
+        path: '{{ storage }}'
+        state: absent

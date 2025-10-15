@@ -1,0 +1,32 @@
+{# vi: set ft=jinja : #}
+{# Make sure to end all lines with a semicolon - these lines will be conjoined.
+   Passwords generated with openssl will almost always have a $ in them, so care
+   must be taken to avoid formatting this string.
+#}
+
+chage --lastday=0 {{ domain.init.user.username }};
+systemctl enable serial-getty@ttyS0.service;
+echo '{{ domain.init.user.password_crypt }}'
+echo '{{ libvirt.ansible.password_crypt }}'
+echo "{{ domain.init.user.username }}:$( echo '{{ domain.init.user.password_crypt }}' | base64 --decode )" | chpasswd -e;
+echo "{{ libvirt.ansible.username }}:$( echo '{{ libvirt.ansible.password_crypt }}' | base64 --decode )" | chpasswd -e;
+
+
+{% if domain.image.os_family == "debian" %}
+  /usr/bin/apt-get update --yes;
+  /usr/bin/apt-get purge --yes cloud-init;
+  /usr/bin/apt-get autoremove;
+  /usr/bin/apt-get install --yes openssh-server qemu-guest-agent;
+  systemctl enable qemu-guest-agent.service;
+  systemctl enable openssh-server;
+  /sbin/usermod -aG sudo acederberg;
+  /sbin/usermod -aG sudo ansible;
+{% else %}
+  dnf remove --yes cloud-init;
+  yum remove --yes cloud-init;
+  dnf install --yes openssh-server; qemu-guest-agent
+  systemctl enable openssh-server;
+  systemctl enable qemu-guest-agent
+  /sbin/usermod -aG wheel acederberg;
+  /sbin/usermod -aG wheel ansible;
+{% endif %}

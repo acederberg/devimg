@@ -6,7 +6,7 @@
         storage: '/var/lib/libvirt/images/{{ domain.name }}.qcow2'
         image_path: "/var/lib/libvirt/images/{{ filename }}"
 - ansible.builtin.debug:
-    var: domain.image
+    var: domain
 - when: domain.image.kind == "cdrom"
   block:
     - name: Check for storage block.

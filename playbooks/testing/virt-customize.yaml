@@ -26,7 +26,11 @@
     - block:
         - name: Check size of `{{ domain.name }}` cloud image.
           block:
-            - ansible.builtin.shell: qemu-img measure /var/lib/libvirt/images/debian-13-nocloud-amd64-20250924-2245.qcow2 --output=json | jq '.["fully-allocated"]'
+            - ansible.builtin.shell: |
+                qemu-img measure \
+                  {dest_qemu} \
+                  --output=json \
+                | jq '.["fully-allocated"]'
               register: image_size_sh
               become: true
             - ansible.builtin.debug:
@@ -49,7 +53,7 @@
       block:
         - name: Generate the customization script
           ansible.builtin.set_fact:
-            virt_customize_script: "{{ lookup('template', './templates/libvirt/customize.j2' ) }}"
+            virt_customize_script: "{{ lookup('template', './libvirt/customize.sh.j2') }}"
         - name: Debug
           ansible.builtin.debug:
             var: virt_customize_script

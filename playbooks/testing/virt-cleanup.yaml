@@ -1,0 +1,9 @@
+# vi: set ft=yaml.ansible : 
+- name: Cleanup VM and Disk
+  hosts: localhost
+  tasks:
+    - name: Cleanup all VMs
+      ansible.builtin.include_tasks: ./virt-down.yaml
+      loop: '{{ libvirt.domains }}'
+      loop_control:
+        loop_var: domain

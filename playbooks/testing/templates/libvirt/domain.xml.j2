@@ -11,6 +11,11 @@
   </os>
 
   <devices>
+    <channel type='pty'>
+      <source mode='bind'>
+      <target type='virtio' name='org.qemu.guest_agent.0'/>
+    </channel>
+
     <!-- Network interface -->
     <interface type='network'>
       <source network='{{ libvirt.network.name }}'/>

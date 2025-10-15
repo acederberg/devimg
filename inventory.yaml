@@ -25,23 +25,33 @@ all:
         bridge: virbr10
       ansible:
         username: ansible
-        sshpubkey:
+        password_crypt: JDYkNnN4Lm9zTDd2cEFZVmZiSCRxbjZNdTBQMFZjUkFxY0x6REtoeUE2ZThxQ3F5cUZLUDlBZ3hwNzBNWFcuNHlpcXlLUEVWeUVUOS9IL2RGeHdiemFySC9IcXRFR0xwMEV2eEtUMW5rLgo=
       domains:
-        - name: 'devimg-debian-13'
-          memory: 4096
+        # - name: 'devimg-debian-13'
+        #   memory: 4096
+        #   image:
+        #     kind: cloud
+        #     src: https://cloud.debian.org/images/cloud/trixie/20250924-2245/debian-13-nocloud-amd64-20250924-2245.qcow2
+        #     checksum: sha512:f88bdcec45b37f5a504b3c1d1f153086ec93f57ac7c691d05a8e912d25f9ba1afaa8152771b0912ff62177fc4169c51710185ec598afc28f9e5b781fcc2b96bb
+        #     dest: /var/lib/libvirt/images/debian-13-nocloud-amd64-cloudinit.qcow2
+        #     desired_size: 100 GB
+        #     os_family: debian
+        #   init:
+        #     !!merge <<: *init
+        - name: devim-rhel-10
           image:
             kind: cloud
-            src: https://cloud.debian.org/images/cloud/trixie/20250924-2245/debian-13-nocloud-amd64-20250924-2245.qcow2
-            checksum: sha512:f88bdcec45b37f5a504b3c1d1f153086ec93f57ac7c691d05a8e912d25f9ba1afaa8152771b0912ff62177fc4169c51710185ec598afc28f9e5b781fcc2b96bb
-            dest: /var/lib/libvirt/images/debian-13-nocloud-amd64-cloudinit.qcow2
-            desired_size: 100 GB
-          init:
-            root:
-            # password_sha256: 044081d2b0a83cd5f531b1a9ee56bcb4d3f8ec8cfdcae1eccc84534e78d05b41
+            src: https://access.cdn.redhat.com/content/origin/files/sha256/73/73473542ff4622524ae200ffabd4064bb2a7ff39ac40a012443a43d429d60019/rhel-10.0-x86_64-kvm.qcow2?user=8e29bffec19cf359f6fb0d4e25bd91fe&_auth_=1760490815_84e6a1b30be6a7f2299343f36e541fec
+            checksum: sha256:73473542ff4622524ae200ffabd4064bb2a7ff39ac40a012443a43d429d60019
+            desired_size: 100GB
+            os_family: redhat
+          init: &init
+            # NOTE(acederberg): Generate passwords with `openssl passwd -6 ... | base64 --encodee`
+            #                   `base64` encoding is necessary because there are `$`s inside of openssl's output.
             user:
               username: acederberg
               fullname: Adrian Cederberg
-              password_crypt: $6$PM0h9EKabaA/GqiG$Snn4ooouZ1HePuuYobQyVhBWFZih/ppS27QKZ5oI.5/5/3PfS7JHtvNYomZFRze0Rw/j4yf5NN1rZPpX8Tfk20
+              password_crypt: JDYkeTIzRGx0LzFmODB1LzdMSCQ1TlF1LnFFT0RQeTM4ZDRuZnAvV25hekhXWERodFVZYWNHNUl3VnQvWUZ0eVh1MDJORFk1eEhvMTZybklFSzFPa3hxYkRMSm4yQmlpbXVOdDdnSU1MMQo=
               sshpubkey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKrQPues3Mc/7exenjylqV9Rae+RklrLB9Rz3hgRLEKB adrn.cederberg123@gmail.com"
   hosts:
     localhost:
