@@ -1,8 +1,17 @@
 # vi: set ft=yaml.ansible :
+- hosts: localhost
+  tasks:
+    - name: Templated
+      block:
+        - ansible.builtin.set_fact:
+            templated_dir: '{{ inventory_dir }}/.templated'
+        - ansible.builtin.file:
+            path: '{{ templated_dir }}'
+            state: directory
 - name: Setup Libvirt Network
   hosts: localhost
   pre_tasks:
-    # NOTE(acederberg): Because of absolute stupidity, it is not possible to 
+    # NOTE(acederberg): Because of absolute stupidity, it is not possible to
     #                   do this stuff in a virtual environment.
     #
     #                   See:
@@ -23,7 +32,9 @@
             state: present
         - name: Ensure `virt-customize`.
           ansible.builtin.package:
-            name: libguestfs-tools-c
+            name:
+              - libguestfs-tools-c
+              - bootc-image-builder
             state: present
   tasks:
     - name: Declare Network

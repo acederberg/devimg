@@ -8,6 +8,7 @@
         dest_local: "{{ libvirt.images_dir }}/{{ filename }}"
         dest_qemu: "/var/lib/libvirt/images/{{ filename }}"
 - name: Download `{{ domain.name }}`
+  when: domain.image.download
   ansible.builtin.get_url:
     url: '{{ domain.image.src }}'
     dest: '{{ dest_local }}'
@@ -50,10 +51,14 @@
         - ansible.builtin.debug:
             var: image_resize_sh
     - name: Customize
+      when: domain.customize
       block:
         - name: Generate the customization script
           ansible.builtin.set_fact:
             virt_customize_script: "{{ lookup('template', './libvirt/customize.sh.j2') }}"
+        - ansible.builtin.copy:
+            content: '{{ virt_customize_script }}'
+            dest: '{{ templated_dir }}/customize-{{ domain.name }}.xml'
         - name: Debug
           ansible.builtin.debug:
             var: virt_customize_script

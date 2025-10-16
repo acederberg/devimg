@@ -18,10 +18,18 @@
       become: true
       ansible.builtin.shell: "{{ lookup('template', 'libvirt/mk-qcow.sh.j2') }}"
 - name: Declare VM
-  community.libvirt.virt:
-    command: define
-    name: '{{ domain.name }}'
-    xml: "{{ lookup('template', 'libvirt/domain.xml.j2') }}"
+  block:
+    - ansible.builtin.set_fact:
+        domain_xml: "{{ lookup('template', 'libvirt/domain.xml.j2') }}"
+    - ansible.builtin.debug:
+        var: domain_xml
+    - ansible.builtin.copy:
+        content: '{{ domain_xml }}'
+        dest: '{{ templated_dir }}/domain-{{ domain.name }}.xml'
+    - community.libvirt.virt:
+        command: define
+        name: '{{ domain.name }}'
+        xml: "{{ domain_xml }}"
 - name: Start VM
   become: true
   community.libvirt.virt:

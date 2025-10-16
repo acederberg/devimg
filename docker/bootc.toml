@@ -1,0 +1,5 @@
+[[customizations.user]]
+name = "ansible"
+password = "ansible"
+key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKrQPues3Mc/7exenjylqV9Rae+RklrLB9Rz3hgRLEKB adrn.cederberg123@gmail.com"
+groups = ["wheel"]
