@@ -92,8 +92,14 @@ This can be a pain in the ass since
 - [Building golden images](https://www.redhat.com/en/blog/linux-golden-homelab-rhel)
 - [Golden images](https://cloud.redhat.com/learning/learn:how-build-and-upload-red-hat-enterprise-linux-rhel-image-image-builder/resource/resources:creating-system-images-rhel-image-builder-using-cli)
 - [What the hell is image mode?](https://developers.redhat.com/products/rhel-image-mode/getting-started?extIdCarryOver=true&intcmp=701f20000012ngPAAQ&sc_cid=7013a0000034ndkAAA)
-- [Bootc](https://github.com/bootc-dev/bootc)
+- [Bootable containers](https://github.com/bootc-dev/bootc)
+- [What is a bootable container](https://containers.github.io/bootable/)
 - [Bootc image builder](https://github.com/osbuild/bootc-image-builder?tab=readme-ov-file)
+- [About the `bootc` config file](https://osbuild.org/docs/bootc/#-build-config)
+- [About the `bootc` blueprint](https://osbuild.org/docs/user-guide/blueprint-reference/)
+- [About `centos-bootc`](https://centos.github.io/centos-bootc/)
+- [The magic that makes it happen: `LibOSTree`](https://github.com/ostreedev/ostree)
+- [The underlying consumer of `LibOSTree`: `OSBuild`](https://osbuild.org/)
 
 For further details, see the playbooks `./playbooks/testing/rhel.yaml`.
 Additionally, it is possible to build customized redhat images with the 
