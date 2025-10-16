@@ -1,0 +1,162 @@
+---
+title: About Libvirt
+---
+
+::: {}
+
+```{=html}
+<div class="py-5">
+  <img src=https://libvirt.org/logos/logo-banner-light-800.png/>
+</div>
+```
+
+:::
+
+# Overview
+
+[`libvirt`](https://libvirt.org/) is a toolkit to manage virtualization platforms
+and provides APIs n various languages. It can run run ontop of `KVM`, `HyperV`,
+`Qemu`, and more - it is the lingua franca of virtualization.
+
+# Features
+
+The most important features that I get out of `libvirt` at the time I am writing
+this are:
+
+1. `XML` definitions for various resources, espcially for networks and domains.
+2. The `ansible` provider,
+3. The excellent command line provided by `virsh` and all of its helpers,
+4. The ease of access to virtual machines throught the commandline either using
+   `virsh console ...` or `vncviewer`.
+
+# Use Cases
+
+The following sections contain some of the use cases that I first wrote down
+when I was starting with libvirt.
+
+## Using `qemu:///system` by Default
+
+Inside of `~/.config/libvirt/libvirt.conf` I updated my configuration to include
+the line(s) shown in @fig-libvirt-config.
+
+::: { #fig-libvirt-config }
+
+```conf
+default_uri = "qemu:///system"
+```
+
+:::
+
+## Spinning up a Networks and Virtual Machines
+
+The following commands in @fig-setup can be used to define and start virtual networks/machines.
+
+::: { #fig-setup }
+
+```sh
+virsh net-define network.xml
+virsh net-start "name-of-the-network-from-network.xml"
+virsh define debian.xml
+virsh start "name-of-the-domain.xml"
+```
+
+:::
+
+Learn more about how the network is included in the virtual machine under
+`/domain/devices/interface` in @fig-domain-xml _(see the `Example VM` callout)_.
+
+::: { .callout-tip collapse=true }
+
+### Example Network `XML`
+
+```{.xml include="../.artifacts/templated/network.xml"  }
+
+```
+
+:::
+
+::: { .callout-tip collapse=false }
+
+### Example VM `XML`
+
+:::: { #fig-domain-xml }
+
+```{.xml include="../.artifacts/templated/domain-devim-rhel-10.xml" }
+
+```
+
+Configuration for a domain connected to the network defined above.
+
+::::
+
+:::
+
+## How to Avoid the Setup Steps
+
+The setup steps can be avoided via
+
+- **Best** - cloud images / guest images without **cloud-init**,
+- **Acceptable** - using `bootc-image-builder`,
+- **Acceptable** only at scale - **cloud-init** - requires more setup - excelled for cloud providers,
+- **Acceptable** pre-seeding,
+- **Worst** - using snapshots.
+
+For an example of cloud images, see [the Debian official cloud images](https://cloud.debian.org/images/cloud/).
+
+::: { .callout-note collapse=true }
+
+### Removing Boot Media
+
+If it was not possible to avoid using a bootable media to install the virtual
+machine, it is possible to find and eject the disk used post-install.
+To list all of the disks attached to the virtual machine, run
+`virsh domblklist --domain name-of-the-domain`. This will show the attached
+storage devices - look for the ISO under this list and copy the source.
+To detach this, run `virsh detach-disk --domain name-of-the-domain '/path/to/my/iso' --config`.
+
+:::
+
+## Connecting to the Virtual Machine
+
+### Without SSH
+
+It is possible to connect to the virtual machine without `ssh` using either of the commands in
+@fig-domain-connect. It is worth noting that the `/domain/devices/grafics` and
+`/domain/devices/console` configurations are necessary in @fig-domain-xml to
+activate the `tty` used to attach to the virtual machine.
+
+::: {#fig-domain-connect}
+
+```sh
+vncviewer localhost:0
+virsh connect "name-of-the-domain"
+```
+
+Means of connecting to the virtual machine without `ssh`.
+
+:::
+
+::: { .callout-note }
+
+#### What is a `PTY`/`TTY`?
+
+A `TTY` is a teletypewriter - a technology used to send text down a wire.
+Nowadays is just an abstract representation of historical devices like
+teletypes and physical terminals.
+A `pty` is a psuedoterminal.
+`ttys0` is used to connect to literal virtual serial port on the virtual machine.
+It can be configured with `/etc/init/ttyS0.conf`.
+
+:::
+
+### With SSH
+
+Connecting to with SSH is straightforward - just provide the virtual machine
+with a first boot command that:
+
+1. ensures that the `openssh` server is enabled, probably with a command like
+   `systemctl enable --now ssh`,
+2. the desired user exists and has a set password,
+3. the correct public keys are provided for the user in question,
+
+e.g. using `virt-customize` or `bootc-image-builder`,

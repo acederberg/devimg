@@ -1,0 +1,89 @@
+---
+title: About Customizing Red Hat Images
+---
+
+It turned out to be quite a pain in the ass to customize a `RHEL10` image.
+For whatever reason, guest images were able to boot just fine but I could not
+get `virt-cusomize` to play nicely with the images - it would always claim that
+there was no operating system on the images.
+
+# Required Reading
+
+The following links should provide sufficient context around the problem of building
+these images.
+
+## Building Images With UIs
+
+- [The Redhat Console Image Builder](https://console.redhat.com/insights/image-builder) - an alternative to building images locally with `weldr`/`composer-cli`/`composer`.
+- [Building Golden Images for RHEL - `Composer` and `Weldr`](https://www.redhat.com/en/blog/linux-golden-homelab-rhel) - A quick and dirty solution to creating custom images.
+- [Building Golder Images on your Own Machine](https://cloud.redhat.com/learning/learn:how-build-and-upload-red-hat-enterprise-linux-rhel-image-image-builder/resource/resources:creating-system-images-rhel-image-builder-using-cli) - A less quick and less dirty solution for the above.
+
+## General Information
+
+- [What the hell is image mode?](https://developers.redhat.com/products/rhel-image-mode/getting-started?extIdCarryOver=true&intcmp=701f20000012ngPAAQ&sc_cid=7013a0000034ndkAAA) - I still don't fully understand either.
+- [Bootable Containers](https://github.com/bootc-dev/bootc) - The bootable containers project - containers as virtual machine images.
+- [What is a Bootable Container?](https://containers.github.io/bootable/) - A continuation of the above.
+- [`LibOSTree`](https://github.com/ostreedev/ostree) - The magic that makes it happen.
+- [`OSBuild`](https://osbuild.org/) - The underlying consumer of `LibOSTree`.
+
+## Programmatic Definitions of BootC Containers
+
+- [Bootc image builder](https://github.com/osbuild/bootc-image-builder?tab=readme-ov-file) - The github repository for the `bootc` image builder.
+- [About the `bootc` config file](https://osbuild.org/docs/bootc/#-build-config) - The `bootc` blueprint file - a thin explanation.
+- [About the `bootc` blueprint](https://osbuild.org/docs/user-guide/blueprint-reference/) - The `bootc` blueprint file - an adequate explanation.
+- [About `centos-bootc`](https://centos.github.io/centos-bootc/) - - What?
+
+# Diagnosis
+
+The main problem is the way that the `RHEL` images are packaged as `bootc` guest
+operating systems. This means that `virt-customize` cannot extend these images,
+but it is possible to extend them using the `bootc-image-builder`.
+
+# Discovery in Composer
+
+It is important to note that the images that composer outputs are not immediately
+compatible with `virt-customize`.
+
+But would still function when I ran the playbooks I used for `Debian` minus the
+customization step. This is because the image would appear to be in the
+so-called `image-mode`. Running `virt-inspector /var/lib/libvirt/images/rhel-10.0-x86_64-kvm.qcow2`
+would print out absolutely nothing, which is strange in comparison to running the
+`virt-inspector` against a `debian` image.
+
+### Notes About Image Mode
+
+Image mode is compatible with QEMU - QEMU is the underlying framework for
+`openshift`, `libvirt`, and `proxmox` - all of which I use frequently.
+
+### Notes About Bootc
+
+`bootc` is a library used for 'Transactional, in-place OS updates using OCI/Docker
+container images'. Along with this, there is the `bootc-image-builder` which
+can be run as a container. `bootc` is used to convert container
+images into bootable virtual machine images for various platforms.
+
+Further, my observation is that the `bootc-image-builder` configuration is exactly
+the configuration used by `composer-cli`. For instance, it is possible to
+specify a user like
+
+```toml
+[[customizations.user]]
+name = "ansible"
+password = "ansible"
+key = "ssh-ed25519  ...."
+groups = ["wheel"]
+```
+
+Using roughly this configuration and the `docker-compose.yaml` provided in this
+project I managed to cook up a `qcow` image. For whatever reason, the
+necessary tools to modify this using `libvirt-customize` has continued to evade
+me, so I will just use the `bootc-image-builder` instead.
+
+# Glossary of Helpful Commands
+
+- `virsh` - The primary command used to manage virtualized resources in `qemu`.
+- `virt-customize` - The customization command for prebaked (e.g. guest machine)
+  disks.
+- `virt-filesystems` - This can be used to inspect disks that have been downloaded.
+- `qemu-img` - Analysis of various image formats. In my case, especially helpful
+  for inspecting `qcow` images.

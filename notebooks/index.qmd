@@ -2,6 +2,6 @@
 title: "Virtualization Topics Notebooks"
 ---
 
-This is a Quarto website.
-
-To learn more about Quarto websites visit <https://quarto.org/docs/websites>.
+These are my notes for myself, my future self, and others.
+While creating this project, I learned a great deal about `libvirt`, `qemu`,
+`bootc`, and bootable container images from the redhat ecosystem.
