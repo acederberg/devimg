@@ -1,0 +1,16 @@
+# vi: set ft=yaml.ansible :
+- name: Get or Download the Image
+  block:
+    - ansible.buildin.include: ./images/download.yaml
+      when: domain.image
+    - ansible.builtin.include: ./images/bootc.yaml
+      when: domain.bootc
+- name: Provide the Image to Qemu
+  become: true
+  when: domain.image
+  ansible.builtin.copy:
+    src: '{{ dest_local }}'
+    dest: '{{ dest_qemu }}'
+    owner: qemu
+    group: qemu
+    mode: '0640'

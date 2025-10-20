@@ -2,6 +2,9 @@
 {# Make sure to end all lines with a semicolon - these lines will be conjoined.
    Passwords generated with openssl will almost always have a $ in them, so care
    must be taken to avoid formatting this string.
+
+   At the moment it looks like this only applies to debian, not redhat since
+   `bootc.toml` is being used for that purpose.
 #}
 
 chage --lastday=0 {{ domain.init.user.username }};

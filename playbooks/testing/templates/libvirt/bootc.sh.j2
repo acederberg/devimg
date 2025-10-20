@@ -1,0 +1,4 @@
+podman pull "{{ domain.bootc.base }}"
+bootc-image-builder build \
+  --type qcow \
+  "{{ domain.bootc.base }}"

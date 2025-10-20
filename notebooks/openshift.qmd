@@ -1,0 +1,27 @@
+---
+title: Openshift
+---
+
+Developing against `openshift` is useful if you are going deploy your applications into `openshift.`
+For instance, it can be a terrible pain to deploy all of the resources required for development just using docker compose.
+Managing deployments can be cumbersome if you want to deploy `OpenSearch`, `KeyCloak`, and more.
+
+# Installing Openshift Locally
+
+First, check the version of `GLIBC` that you have. This can be done using
+`lld --version`. If the version is less that `2.34`, then you will not be
+able to run `crc`, the code ready containers binary which is responsible for
+launching your local openshift instance.
+
+::: { .callout-tip collapse=true }
+
+# What is `GLibC`?
+
+`glibc` in the **GNU Library for C standards**.
+`ldd` is a command line tool that can be used to show the shared library dependencies of binaries.
+The first line of `ldd`s output will show the current version of `glib` since it is the common dependency of all (functioning) binaries on a GNU system.
+
+:::
+
+If the current version of `GLIBC` is not enough, consider upgrading to a newer version of RHEL.
+If this all works out, then [download the executable](https://console.redhat.com/openshift/create/local) and install it into `/usr/local/bin`,

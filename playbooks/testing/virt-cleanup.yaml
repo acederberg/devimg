@@ -3,7 +3,7 @@
   hosts: localhost
   tasks:
     - name: Cleanup all VMs
-      ansible.builtin.include_tasks: ./virt-down.yaml
+      ansible.builtin.include_tasks: ./tasks/virt-down.yaml
       loop: '{{ libvirt.domains }}'
       loop_control:
         loop_var: domain

@@ -1,0 +1,11 @@
+# vi: set ft=yaml.ansible :
+# NOTE(acederberg): Only for domains specifying an `image` section.
+- name: Set variables
+  when: domain.image
+  block:
+    - ansible.builtin.set_fact:
+        image: domain.image
+        filename: "{{ domain.name }}.qcow2"
+    - ansible.builtin.set_fact:
+        dest_local: "{{ artifacts.images }}/{{ filename }}"
+        dest_qemu: "/var/lib/libvirt/images/{{ filename }}"

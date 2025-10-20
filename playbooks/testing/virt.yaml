@@ -80,14 +80,6 @@
 - name: Create Virtual Machines
   hosts: localhost
   tasks:
-    - name: Create Images Directory
-      block:
-        - ansible.builtin.stat:
-            path: "{{ libvirt.images_dir }}"
-          register: image_dir
-        - name: Create Images Dir
-          when: not image_dir.stat.exists
-          ansible.builtin.shell: mkdir --parents {{ libvirt.images_dir }}
     - name: Download and Customize Images
       ansible.builtin.include_tasks: virt-customize.yaml
       loop: '{{ libvirt.domains }}'
@@ -98,11 +90,6 @@
       loop: '{{ libvirt.domains }}'
       loop_control:
         loop_var: domain
-        # NOTE(acederberg): save for later, disk only setup continuation
-        # - name: Complete the install steps, Eject bootable media
-        #   hosts: localhost
-        #   tasks:
-        #     - name: Complete install steps
 - name: Complete Test Seup
   hosts: localhost
   tasks:

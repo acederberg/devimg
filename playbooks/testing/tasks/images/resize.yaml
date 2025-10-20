@@ -1,0 +1,30 @@
+# vi: set ft=yaml.ansible :
+- name: Resize cloud image
+  when: domain.image.kind == "cloud"
+  block:
+    - block:
+        - name: Check size of `{{ domain.name }}` cloud image.
+          block:
+            - ansible.builtin.shell: |
+                qemu-img measure \
+                  {dest_qemu} \
+                  --output=json \
+                | jq '.["fully-allocated"]'
+              register: image_size_sh
+              become: true
+            - ansible.builtin.debug:
+                var: image_size_sh
+            - ansible.builtin.set_fact:
+                image_size_desired: '{{ domain.image.desired_size | human_to_bytes }}'
+                image_size: '{{ image_size_sh.stdout | int }}'
+            - ansible.builtin.set_fact:
+                image_size_diff: '{{ image_size_desired - image_size }}'
+            - ansible.builtin.debug:
+                var: image_size_diff
+        - name: Resize image `{{ dest_qemu }}` for `{{ domain.name }}`.
+          when: image_size_diff > 0
+          become: true
+          ansible.builtin.shell: qemu-img resize {{ dest_qemu }} +{{ image_size_diff }}
+          register: image_resize_sh
+        - ansible.builtin.debug:
+            var: image_resize_sh
