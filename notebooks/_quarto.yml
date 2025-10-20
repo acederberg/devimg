@@ -1,14 +1,18 @@
 project:
   type: website
-
 website:
   title: "Virtualization Topics Notebooks"
   navbar:
     left:
       - href: index.qmd
         text: Home
-      - about.qmd
-
+  sidebar:
+    style: docked
+    contents:
+      - href: ./libvirt.qmd
+        text: Libvirt
+      - href: ./rhel.qmd
+        text: RHEL
 format:
   html:
     theme:
@@ -16,6 +20,3 @@ format:
       - brand
     css: styles.css
     toc: true
-
-
-

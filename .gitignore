@@ -4,3 +4,4 @@
 .templated
 .bootc-outputs
 .env
+.artifacts

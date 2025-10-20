@@ -1,0 +1,15 @@
+{# vi: set ft=jinja #}
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE wallpapers SYSTEM "gnome-wp-list.dtd">
+<wallpapers>
+  {% for src in background_paths.files %}
+    <wallpaper deleted="false">
+      <filename>{{ src.path }}</filename>
+      <options>{{ backgrounds.options | default('span') }}</options>
+      <shade_type>{{ backgrounds.shade | default('solid') }}</shade_type>
+      <pcolor>{{ backgrounds.pcolor | default('#ffffff') }}</pcolor>
+      <scolor>{{ backgrounds.scolor | default('#000000') }}</scolor>
+    </wallpaper>
+  {% endfor %}
+</wallpapers>

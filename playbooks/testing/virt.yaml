@@ -1,13 +1,7 @@
 # vi: set ft=yaml.ansible :
 - hosts: localhost
   tasks:
-    - name: Templated
-      block:
-        - ansible.builtin.set_fact:
-            templated_dir: '{{ inventory_dir }}/.templated'
-        - ansible.builtin.file:
-            path: '{{ templated_dir }}'
-            state: directory
+    - ansible.builtin.include_tasks: ./context.yaml
 - name: Setup Libvirt Network
   hosts: localhost
   pre_tasks:
@@ -37,11 +31,18 @@
               - bootc-image-builder
             state: present
   tasks:
+    - name: Create Network XML
+      block:
+        - ansible.builtin.set_fact:
+            network_xml: "{{ lookup('template', 'libvirt/network.xml.j2') }}"
+        - ansible.builtin.copy:
+            content: "{{ network_xml }}"
+            dest: "{{ artifacts.templated }}/network.xml"
     - name: Declare Network
       community.libvirt.virt_net:
         command: define
         name: "{{ libvirt.network.name }}"
-        xml: "{{ lookup('template', 'libvirt/network.xml.j2') }}"
+        xml: "{{ network_xml }}"
     - name: Start Network
       community.libvirt.virt_net:
         command: start

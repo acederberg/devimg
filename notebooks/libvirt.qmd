@@ -1,5 +1,8 @@
 ---
 title: About Libvirt
+format:
+  html: {}
+  pdf: {}
 ---
 
 ::: {}
@@ -160,3 +163,9 @@ with a first boot command that:
 3. the correct public keys are provided for the user in question,
 
 e.g. using `virt-customize` or `bootc-image-builder`,
+
+## Customizing Virtual Machines
+
+```{.toml include="../docker/bootc.toml"}
+
+```

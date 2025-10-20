@@ -2,6 +2,10 @@ all:
   vars:
     ansible_python_interpreter: /home/acederberg/Projects/DevImg/.venv/bin/python3
     arch: amd64
+    backgrounds:
+      screensaver: pascal-debrunner-TOKeCFmRtj4-unsplash.jpg
+      desktop: pascal-debrunner-TOKeCFmRtj4-unsplash.jpg
+      directory: /home/acederberg/Pictures/Wallpapers
     tools:
       argocd:
         repo: argoproj/argo-cd
