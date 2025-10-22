@@ -1,0 +1,75 @@
+# vi: set ft=yaml.ansible :
+# - name: Install depends
+#   hosts: localhost
+# pre_tasks:
+#   # https://www.redhat.com/en/blog/linux-golden-homelab-rhel
+#   - name: ""
+#     block:
+#       - when: false
+#         ansible.builtin.package:
+#           name:
+#             - cockpit-compose.noarch
+#             - osbuild-composer
+#             - composer-cli
+#             - cockpit
+#             - cockpit-composer
+#       - ansible.builtin.systemd:
+#           name:
+#             - osbuild-composer.socket
+#             - cockpit
+#             - cockpit.socket
+#           enabled: true
+#           state: started
+- name: Generate Compose Project.
+  block:
+    - name: Generate Templates
+      ansible.builtin.set_fact:
+        bootc_templates:
+          config:
+            content: "{{ lookup('template', '../templates/bootc/config.toml.j2' ) }}"
+            dest: "{{ artifacts.bootc }}/config.toml"
+          compose:
+            content: "{{ lookup('template', '../templates/bootc/compose.yaml.j2' ) }}"
+            dest: "{{ artifacts.bootc }}/compose.yaml"
+          script:
+            content: "{{ lookup('template', '../templates/bootc/build.sh.j2') }}"
+            dest: "{{ artifacts.bootc }}/build.sh"
+        bootc_output: "{{ artifacts.bootc_outputs }}/qcow/disk.qcow2"
+    - name: Check if Output Exists.
+      ansible.builtin.stat:
+        path: "{{ bootc_output }}"
+      register: bootc_output_stat
+    - name: Save Templates
+      ansible.builtin.copy:
+        dest: "{{ item.value.dest }}"
+        content: "{{ item.value.content }}"
+        mode: "0644"
+      with_dict: "{{ bootc_templates }}"
+- name: Do build
+  when: not bootc_output_stat.stat.exists
+  block:
+    - name: Start Compose Project
+      community.docker.docker_compose_v2:
+        files: ./compose.yaml
+        project_src: "{{ artifacts.bootc }}"
+        wait: true
+        pull: missing
+        state: present
+    - name: Invoke Bootc Builder.
+      community.docker.docker_compose_v2_exec:
+        service: bootc
+        files: ./compose.yaml
+        project_src: "{{ artifacts.bootc }}"
+        command: bash /build.sh
+    - name: Stop Compose Project.
+      community.docker.docker_compose_v2:
+        files: ./compose.yaml
+        project_src: "{{ artifacts.bootc }}"
+        wait: false
+        state: stopped
+- name: Move build results into the Image Directory
+  ansible.builtin.copy:
+    # NOTE(acederberg): Disk should be named as such. It can be retrieved from the manifest as well
+    src: "{{ artifacts.bootc_output }}/qcow/disk.qcow2"
+    dest: "{{ artifacts.images }}/{{ domain.name }}.qcow2"
+    mode: "0644"

@@ -1,5 +1,6 @@
 {# vi: set ft=jinja #}
+
 podman pull "{{ domain.bootc.base }}"
 bootc-image-builder build \
-  --type qcow \
+  --type qcow2 \
   "{{ domain.bootc.base }}"

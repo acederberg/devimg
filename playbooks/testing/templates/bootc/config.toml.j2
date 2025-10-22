@@ -1,0 +1,47 @@
+# vi: set ft=toml :
+
+# NOTE(acederberg): Full documentation can be found here: https://osbuild.org/docs/user-guide/blueprint-reference/#partitioning-mode
+#                   It looks like this could be used to make base images for airgapped networks.
+
+# NOTE(acederberg): It would appear that passing hashed passwords is supported: https://osbuild.org/docs/user-guide/blueprint-reference/#additional-users
+[[customizations.user]]
+name = "{{ libvirt.ansible.username }}"
+password = "{{ libvirt.ansible.password_crypt }}"
+Description = "The user for ansible."
+key = "{{ domain.init.user.sshpubkey }}"
+groups = ["wheel", "docker"]
+uid = 1001
+gid = 1001
+
+
+[[customizations.user]]
+name = "{{ domain.init.user.username }}"
+password = "{{ domain.init.user.password_crypt }}"
+key = "{{ domain.init.user.sshpubkey }}"
+groups = ["wheel", "docker"]
+uid = 1000
+gid = 1000
+
+
+[customizations.timezone]
+timezone = "US/Montain"
+ntpservers = ["0.north-america.pool.ntp.org", "1.north-america.pool.ntp.org"]
+
+
+[customizations.locale]
+languages = ["en_US.UTF-8"]
+keyboard = "us"
+
+[customizations.firewall]
+ports = ["22:tcp", "80:tcp", "imap:tcp", "53:tcp", "53:udp", "30000-32767:tcp", "30000-32767:udp"]
+
+[customizations.services]
+enabled = ["sshd", "qemu-guest-agent"]
+
+
+[[customizations.disk.partitions.logical_volumes]]
+name = "{{ domain.init.user.username }}-home-disk"
+mountpoint = "/home/{{ domain.init.user.username }}"
+label = "home"
+fs_type = "ext4"
+minsize = "25 GiB"

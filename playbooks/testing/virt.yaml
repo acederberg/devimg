@@ -2,95 +2,91 @@
 - hosts: localhost
   tasks:
     - ansible.builtin.include_tasks: ./context.yaml
-- name: Setup Libvirt Network
-  hosts: localhost
-  pre_tasks:
-    # NOTE(acederberg): Because of absolute stupidity, it is not possible to
-    #                   do this stuff in a virtual environment.
-    #
-    #                   See:
-    #
-    #                   - https://github.com/ansible/ansible/issues/64689#issuecomment-552948004
-    - name: Get `libvirt` Deps
-      when: ansible_python_interpreter == "/usr/bin/python3"
-      block:
-        - name: Make sure that 'libvirt-devel' is installed.
-          become: true
-          ansible.builtin.dnf:
-            name: libvirt-devel
-            state: present
-            update_cache: true
-        - name: Make sure that 'libvirt-python' is installed.
-          ansible.builtin.pip:
-            name: libvirt-python
-            state: present
-        - name: Ensure `virt-customize`.
-          ansible.builtin.package:
-            name:
-              - libguestfs-tools-c
-              - bootc-image-builder
-            state: present
-  tasks:
-    - name: Create Network XML
-      block:
-        - ansible.builtin.set_fact:
-            network_xml: "{{ lookup('template', 'libvirt/network.xml.j2') }}"
-        - ansible.builtin.copy:
-            content: "{{ network_xml }}"
-            dest: "{{ artifacts.templated }}/network.xml"
-    - name: Declare Network
-      community.libvirt.virt_net:
-        command: define
-        name: "{{ libvirt.network.name }}"
-        xml: "{{ network_xml }}"
-    - name: Start Network
-      community.libvirt.virt_net:
-        command: start
-        name: "{{ libvirt.network.name }}"
-        autostart: true
-# NOTE(acederberg): Generate SSH keys for ansible, set up hostnames, and verify connectivity.
-- name: Configure host
-  hosts: localhost
-  tasks:
-    - name: Generate an sshkey for ansible
-      block:
-        - ansible.builtin.set_fact:
-            ansible_sshkeys_dir: "{{ inventory_dir }}/.ssh"
-        - ansible.builtin.set_fact:
-            ansible_sshkeys: "{{ ansible_sshkeys_dir }}/ansible"
-        - ansible.builtin.stat:
-            path: "{{ ansible_sshkeys_dir }}"
-          register: ansible_sshkeys_dir_status
-        - ansible.builtin.shell: mkdir --parents {{ ansible_sshkeys_dir }}
-          when: not ansible_sshkeys_dir_status.stat.exists
-        - ansible.builtin.stat:
-            path: "{{ ansible_sshkeys }}"
-          register: ansible_sshkeys_stat
-        - name: Create Keypair
-          when: not ansible_sshkeys_stat.stat.exists
-          community.crypto.openssh_keypair:
-            path: "{{ ansible_sshkeys }}"
-            mode: "0440"
-            type: ed25519
-            state: present
-          register: ansible_sshkeys
-        - name: Debug
-          ansible.builtin.debug:
-            var: ansible_sshkeys
+# - name: Setup Libvirt Network
+#   hosts: localhost
+#   pre_tasks:
+#     # NOTE(acederberg): Because of absolute stupidity, it is not possible to
+#     #                   do this stuff in a virtual environment.
+#     #
+#     #                   See:
+#     #
+#     #                   - https://github.com/ansible/ansible/issues/64689#issuecomment-552948004
+#     - name: Get `libvirt` Deps
+#       when: ansible_python_interpreter == "/usr/bin/python3"
+#       block:
+#         - name: Make sure that 'libvirt-devel' is installed.
+#           become: true
+#           ansible.builtin.dnf:
+#             name: libvirt-devel
+#             state: present
+#             update_cache: true
+#         - name: Make sure that 'libvirt-python' is installed.
+#           ansible.builtin.pip:
+#             name: libvirt-python
+#             state: present
+#         - name: Ensure `virt-customize`.
+#           ansible.builtin.package:
+#             name:
+#               - libguestfs-tools-c
+#               - bootc-image-builder
+#             state: present
+#   tasks:
+#     - name: Create Network XML
+#       block:
+#         - ansible.builtin.set_fact:
+#             network_xml: "{{ lookup('template', 'libvirt/network.xml.j2') }}"
+#         - ansible.builtin.copy:
+#             content: "{{ network_xml }}"
+#             dest: "{{ artifacts.templated }}/network.xml"
+#     - name: Declare Network
+#       community.libvirt.virt_net:
+#         command: define
+#         name: "{{ libvirt.network.name }}"
+#         xml: "{{ network_xml }}"
+#     - name: Start Network
+#       community.libvirt.virt_net:
+#         command: start
+#         name: "{{ libvirt.network.name }}"
+#         autostart: true
+# # NOTE(acederberg): Generate SSH keys for ansible, set up hostnames, and verify connectivity.
+# - name: Configure host
+#   hosts: localhost
+#   tasks:
+#     - name: Generate an sshkey for ansible
+#       block:
+#         - ansible.builtin.set_fact:
+#             ansible_sshkeys_dir: "{{ inventory_dir }}/.ssh"
+#         - ansible.builtin.set_fact:
+#             ansible_sshkeys: "{{ ansible_sshkeys_dir }}/ansible"
+#         - ansible.builtin.stat:
+#             path: "{{ ansible_sshkeys_dir }}"
+#           register: ansible_sshkeys_dir_status
+#         - ansible.builtin.shell: mkdir --parents {{ ansible_sshkeys_dir }}
+#           when: not ansible_sshkeys_dir_status.stat.exists
+#         - ansible.builtin.stat:
+#             path: "{{ ansible_sshkeys }}"
+#           register: ansible_sshkeys_stat
+#         - name: Create Keypair
+#           when: not ansible_sshkeys_stat.stat.exists
+#           community.crypto.openssh_keypair:
+#             path: "{{ ansible_sshkeys }}"
+#             mode: "0440"
+#             type: ed25519
+#             state: present
+#           register: ansible_sshkeys
+#         - name: Debug
+#           ansible.builtin.debug:
+#             var: ansible_sshkeys
 - name: Create Virtual Machines
   hosts: localhost
   tasks:
     - name: Download and Customize Images
-      ansible.builtin.include_tasks: virt-customize.yaml
+      ansible.builtin.include_tasks: ./tasks/domain.yaml
       loop: '{{ libvirt.domains }}'
       loop_control:
         loop_var: domain
-    - name: Start VMs
-      ansible.builtin.include_tasks: virt-up.yaml
-      loop: '{{ libvirt.domains }}'
-      loop_control:
-        loop_var: domain
-- name: Complete Test Seup
-  hosts: localhost
-  tasks:
-    - ansible.builtin.include_tasks: virt-finalize.yaml
+
+# - name: Complete Test Seup
+#   hosts: localhost
+#   tasks:
+#     - ansible.builtin.include_tasks: virt-finalize.yaml

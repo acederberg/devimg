@@ -30,7 +30,7 @@
       <!-- Bootable media -->
       <disk type='file' device='cdrom'>
         <driver name='qemu' type='raw'/>
-        <source file='{{ image_path }}'/>
+        <source file='{{ dest_qemu }}'/>
         <target dev='sda' bus='sata'/>
         <readonly/>
       </disk>
@@ -44,7 +44,7 @@
     {% elif domain.image.kind == "cloud" %}
       <disk type='file' device='disk'>
         <driver name='qemu' type='qcow2'/>
-        <source file='{{ image_path }}'/>
+        <source file='{{ dest_qemu }}'/>
         <target dev='sda' bus='sata'/>
       </disk>
     {% endif %}

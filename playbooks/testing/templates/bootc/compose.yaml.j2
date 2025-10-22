@@ -1,0 +1,32 @@
+# vi: set ft=yaml :
+services:
+  bootc:
+    container_name: bootc
+    tty: true
+    privileged: true
+    security_opt:
+      - label=type:unconfied__t
+    volumes:
+      - type: bind
+        source: "{{ artifacts.bootc_outputs }}"
+        target: /output
+      - type: bind
+        source: /var/lib/containers/storage
+        target: /var/lib/containers/storage
+      - type: bind
+        source: ./build.sh
+        target: /build.sh
+      - type: bind
+        source: ./config.toml
+        target: /config.toml
+    image: registry.redhat.io/rhel9/bootc-image-builder
+    configs:
+      - source: docker
+        target: /etc/containers/registries.d/host.json
+    entrypoint: bash
+    environment:
+      REGISTRY_AUTH_FILE: "/etc/containers/registries.d/host.json"
+configs:
+  docker:
+    name: docker-config
+    file: $HOME/.docker/config.json

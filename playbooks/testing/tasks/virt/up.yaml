@@ -1,33 +1,30 @@
 # vi: set ft=yaml.ansible :
-- block:
-    - ansible.builtin.set_fact:
-        filename: "{{ domain.image.src | urlsplit('path') |  split('/') | last }}"
-    - ansible.builtin.set_fact:
-        storage: '/var/lib/libvirt/images/{{ domain.name }}.qcow2'
-        image_path: "/var/lib/libvirt/images/{{ filename }}"
-- ansible.builtin.debug:
-    var: domain
-    # NOTE(acederberg): This is necessary for `cdrom` images. I am not interested
-    #                   in running these images for the most part, but it can be
-    #                   helpful in certain instances so I am keeping it arround.
-- when: domain.image.kind == "cdrom"
-  block:
-    - name: Check for storage block.
-      ansible.builtin.stat:
-        path: "{{ storage }}"
-      register: storage_status
-    - name: Create the Storage Block
-      when: not storage_status.stat.exists
-      become: true
-      ansible.builtin.shell: "{{ lookup('template', 'libvirt/mk-qcow.sh.j2') }}"
+# NOTE(acederberg): This is necessary for `cdrom` images. I am not interested
+#                   in running these images for the most part, but it can be
+#                   helpful in certain instances so I am keeping it arround.
+# - when: domain.image.kind == "cdrom"
+#   block:
+#     - name: Check for storage block.
+#       ansible.builtin.stat:
+#         path: "{{ storage }}"
+#       register: storage_status
+#     - name: Create the Storage Block
+#       when: not storage_status.stat.exists
+#       become: true
+#       ansible.builtin.shell: "{{ lookup('template', 'libvirt/mk-qcow.sh.j2') }}"
+- name: Include Domain Context.
+  ansible.builtin.include_vars: "../context.yaml"
 - name: Declare VM
   block:
-    - ansible.builtin.set_fact:
+    - name: Generate Domain XML.
+      ansible.builtin.set_fact:
         domain_xml: "{{ lookup('template', 'libvirt/domain.xml.j2') }}"
-    - ansible.builtin.copy:
+    - name: Save Domain XML
+      ansible.builtin.copy:
         content: '{{ domain_xml }}'
         dest: '{{ artifacts.templated }}/domain-{{ domain.name }}.xml'
-    - community.libvirt.virt:
+    - name: Defined Domain
+      community.libvirt.virt:
         command: define
         name: '{{ domain.name }}'
         xml: "{{ domain_xml }}"

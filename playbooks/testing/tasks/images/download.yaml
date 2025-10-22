@@ -1,7 +1,0 @@
-# vi: set ft=yaml.ansible :
-- name: Download `{{ domain.name }}`
-  when: domain.image
-  ansible.builtin.get_url:
-    url: '{{ domain.image.src }}'
-    dest: '{{ dest_local }}'
-    checksum: '{{ domain.image.checksum }}'
