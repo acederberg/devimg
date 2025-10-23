@@ -60,3 +60,12 @@ all:
   hosts:
     localhost:
       ansible_connection: local
+redhat:
+  vars:
+    user: acederberg
+  hosts:
+    test:
+      ansible_host: 192.168.100.197
+      ansible_port: 22
+      ansible_user: ansible
+      ansible_python_interpreter: /bin/python3.12

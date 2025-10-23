@@ -1,61 +1,177 @@
 # vi: set ft=yaml.ansible :
 - name: "Create the Ansible Directory"
-  hosts: debian
-  remote_user: "{{ user.username }}"
+  hosts:
+    - debian
+    - redhat
   tasks:
-    - name: Prepare the ansible directory.
-      ansible.builtin.shell: "mkdir --parent {{ user.homedir }}/Ansible/Build"
+    - name: "Setup Context."
+      ansible.builtin.include_tasks: "./context.yaml"
 - name: Update and Upgrade, Required Deps
   become: true
-  hosts: all
+  hosts:
+    - debian
+    - redhat
   tasks:
-    - name: Apt Update
-      ansible.builtin.shell: apt update
+    - name: Install Basic Utilities
       become: true
-    - name: Apt Upgrade
-      ansible.builtin.shell: apt upgrade --yes
-      become: true
-    - name: Apt Install Required
-      become: true
-      apt:
+      ansible.builtin.package:
         name:
           - git
-          - python3-pip
-          - python3-venv
           - curl
+          - wget
+          - g++
           - cmake
           - ca-certificates
-        state: latest
-        update_cache: true
-- name: Add Docker and Docker Compose
+        state: present
+- name: Debian Specific Basic Installs.
   hosts: debian
-  become: true
   tasks:
-    - name: Create keyring directory
-      ansible.builtin.shell: install -m 0755 -d /etc/apt/keyrings
-    - name: Download the GPG key
-      ansible.builtin.shell: curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
-    - name: Set permissions on the key
-      ansible.builtin.shell: sudo chmod a+r /etc/apt/keyrings/docker.asc
-    - name: Add Docker Repository
-      ansible.builtin.shell: |
-        echo \
-          "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
-          $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-          sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-    - name: Update apt and install docker-ce
-      apt:
-        state: latest
-        update_cache: true
+    - name: Debian Sepcific Installs
+      ansible.builtin.apt:
         name:
-          - docker-ce
-          - docker-ce-cli
-          - containerd.io
-          - docker-buildx-plugin
-          - docker-compose-plugin
-    - name: Install Docker Module for Python
-      pip:
+          - python3-pip
+          - python3-venv
+        state: present
+- name: (Debian) Add Docker and Docker Compose
+  hosts:
+    - debian
+  become: true
+  vars:
+    gpg_key: "{{ artifacts.base }}/docker.asc"
+    repo: https://download.docker.com/linux/debian
+  tasks:
+    - name: "Check Docker Install"
+      ansible.builtin.stat:
+        path: /usr/bin/docker
+      register: docker_stat
+    - name: "Install Docker"
+      when: not docker_stat.stat.exists
+      block:
+        - name: Check for Deb Config
+          ansible.builtin.stat:
+            path: /etc/apt/keyring
+          register: keyring_stat
+        - name: Generate Deb Config
+          when: keyring_stat.stat.exists
+          block:
+            - name: Create keyring directory
+              ansible.builtin.file:
+                path: /etc/apt/keyring
+                mode: "0755"
+                owner: root
+                group: root
+            - name: Download the GPG Key
+              ansible.builtin.get_url:
+                url: https://download.docker.com/linux/debian/gpg
+                dest: "{{ gpg_key }}"
+                mode: "0644"
+                owner: ansible
+                group: ansible
+            - name: Install the GPG Key.
+              ansible.builtin.copy:
+                src: "{{ gpg_key }}"
+                dest: /etc/apt/keyrings/docker.asc
+                mode: "0644"
+                owner: root
+                group: root
+            - name: Read and parse .env file
+              ansible.builtin.set_fact:
+                os_release: "{{ lookup('file', '/os/release') | splitlines | select('match', '^[A-Z_]+=') | map('split', '=', 1) | list | dict }}"
+            - name: Check the `VERSION_CODENAME` is defined.
+              when: not os_release.VERSION_CODENAME
+              ansible.builtin.fail:
+                msg: "`VERSION_CODENAME` was not found in `/os.release`."
+            - name: Add Docker Repository
+              ansible.builtin.copy:
+                mode: "0644"
+                owner: root
+                group: root
+                dest: /etc/apt/sources.list.d/docker.list
+                content: >
+                  deb [arch={{ ansible_architecture }} signed-by={{ gpg_key }}] {{repo}} {{ os_release.VERSION_CODENAME }} stable
+
+        - name: Install Docker Container Engine
+          apt:
+            state: present
+            update_cache: true
+            name:
+              - docker-ce
+              - docker-ce-cli
+              - containerd.io
+              - docker-buildx-plugin
+              - docker-compose-plugin
+- name: (RedHat) Add Docker and Docker Compose
+  hosts:
+    - redhat
+  gather_facts: false
+  become: true
+  vars:
+    repo_config: "{{ artifacts.base }}/docker-ce.repo"
+  tasks:
+    - name: Check Docker Installed
+      ansible.builtin.stat:
+        path: /usr/bin/docker
+      register: docker_stat
+    - name: Install Docker
+      when: not docker_stat.stat.exists
+      block:
+        - name: Uninstall Existing Depends
+          ansible.builtin.dnf:
+            state: absent
+            name:
+              - docker
+              - docker-client
+              - docker-client-latest
+              - docker-common
+              - docker-latest
+              - docker-latest-logrotate
+              - docker-logrotate
+              - docker-engine
+              - podman
+              - runc
+        - name: "Add Core Plugins for DNF"
+          ansible.builtin.dnf:
+            state: present
+            name:
+              - dnf-plugins-core
+        - name: "Get Repo Configuration."
+          ansible.builtin.get_url:
+            url: https://download.docker.com/linux/rhel/docker-ce.repo
+            dest: "{{ repo_config }}"
+            mode: "0644"
+            owner: ansible
+            group: ansible
+        - name: "Provide Repo Configuration."
+          ansible.builtin.copy:
+            src: "{{ repo_config }}"
+            remote_src: true
+            dest: "/etc/yum.repos.d"
+            mode: "0644"
+            owner: root
+            group: root
+        - name: "Install Docker"
+          ansible.builtin.dnf:
+            name:
+              - docker-ce
+              - docker-ce-cli
+              - containerd.io
+              - docker-buildx-plugin
+              - docker-compose-plugin
+- name: (Common) Add Docker and Docker Compose
+  hosts: [redhat, debian]
+  gather_facts: false
+  tasks:
+    - name: "Start Docker"
+      become: true
+      # ansible.builtin.systemd_service:
+      ansible.builtin.systemd:
         name: docker
+        enabled: true
+        state: started
+    - name: Add users to the Docker Group
+      ansible.builtin.user:
+        user: "{{ user }}"
+        groups: docker
 - name: Add Quarto
   hosts: all
   remote_user: "{{ user.username }}"

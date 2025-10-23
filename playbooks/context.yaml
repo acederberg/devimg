@@ -1,0 +1,17 @@
+# vi: set ft=yaml.ansible :
+- name: Define Destination for all Ansible Assets.
+  ansible.builtin.set_fact:
+    artifacts_dir: "/home/ansible/.artifacts"
+- name: Define Ansible Assets Subdirs.
+  ansible.builtin.set_fact:
+    artifacts:
+      base: "{{ artifacts_dir }}"
+      repos: "{{ artifacts_dir }}/repos"
+- name: "Instantiate Ansible Assets Dirs."
+  ansible.builtin.file:
+    state: directory
+    mode: "1700"
+    path: "{{ item.value }}"
+    owner: "ansible"
+    group: "ansible"
+  with_dict: "{{ artifacts }}"

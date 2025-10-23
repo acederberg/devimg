@@ -79,6 +79,57 @@ project I managed to cook up a `qcow` image. For whatever reason, the
 necessary tools to modify this using `libvirt-customize` has continued to evade
 me, so I will just use the `bootc-image-builder` instead.
 
+#### Building Images Inside of `bootc`
+
+It turns out that the host needs some specific kernel modules to build bootc images.
+The traceback tends to look like
+
+```
+mount/- (org.osbuild.xfs): mounting /dev/loop0p4 -> /store/tmp/buildroot-tmp-6w8oglx5/mounts/
+mount/- (org.osbuild.xfs): already unmounted: /store/tmp/buildroot-tmp-6w8oglx5/mounts/
+Output:
+Traceback (most recent call last):
+  File "/usr/bin/osbuild", line 33, in <module>
+    sys.exit(load_entry_point('osbuild==162', 'console_scripts', 'osbuild')())
+  File "/usr/lib/python3.9/site-packages/osbuild/main_cli.py", line 185, in osbuild_cli
+    r = manifest.build(
+  File "/usr/lib/python3.9/site-packages/osbuild/pipeline.py", line 525, in build
+    res = pl.run(store, monitor, libdir, debug_break, stage_timeout)
+  File "/usr/lib/python3.9/site-packages/osbuild/pipeline.py", line 399, in run
+    results = self.build_stages(store,
+  File "/usr/lib/python3.9/site-packages/osbuild/pipeline.py", line 371, in build_stages
+    r = stage.run(tree,
+  File "/usr/lib/python3.9/site-packages/osbuild/pipeline.py", line 243, in run
+    data_mnt = mntmgr.mount(mount)
+  File "/usr/lib/python3.9/site-packages/osbuild/mounts.py", line 98, in mount
+    path = client.call("mount", args)
+  File "/usr/lib/python3.9/site-packages/osbuild/host.py", line 348, in call
+    ret, _ = self.call_with_fds(method, args)
+  File "/usr/lib/python3.9/site-packages/osbuild/host.py", line 384, in call_with_fds
+    raise error
+osbuild.host.RemoteError: RuntimeError: b'mount: /store/tmp/buildroot-tmp-6w8oglx5/mounts: wrong fs type, bad option, bad superblock on /dev/loop0p4, missing codepage or helper program, or other error.' (code: 32)
+   File "/usr/lib/python3.9/site-packages/osbuild/host.py", line 268, in serve
+    reply, reply_fds = self._handle_message(msg, fds)
+  File "/usr/lib/python3.9/site-packages/osbuild/host.py", line 301, in _handle_message
+    ret, fds = self.dispatch(name, args, fds)
+  File "/usr/lib/python3.9/site-packages/osbuild/mounts.py", line 131, in dispatch
+    r = self.mount(args)
+  File "/usr/lib/python3.9/site-packages/osbuild/mounts.py", line 199, in mount
+    raise RuntimeError(f"{msg} (code: {code})") from e
+```
+
+This error is entirely uninsightful for what has gone wrong.
+Looking at the output of `dmesg`, it is
+
+```log
+[  889.433451] XFS (loop0p4): Superblock has unknown incompatible features (0x20) enabled.
+[  889.433455] XFS (loop0p4): Filesystem cannot be safely mounted by this kernel.
+[  889.433457] XFS (loop0p4): SB validate failed with error -22.
+```
+
+This leads me to believe that my kernel is insufficient to handle `XFS` file
+systems. It turns out that there is an option to specify the rootfs
+
 # Glossary of Helpful Commands
 
 - `virsh` - The primary command used to manage virtualized resources in `qemu`.

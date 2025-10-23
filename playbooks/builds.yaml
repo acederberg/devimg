@@ -1,5 +1,11 @@
+- name: Build Lua
+  hosts:
+    - debian
+    - redhat
 - name: Build Neovim
-  hosts: all
+  hosts:
+    - debian
+    - redhat
   remote_user: "{{ user.username }}"
   tasks:
     - name: Clone the repo
@@ -9,13 +15,11 @@
         dest: "{{ user.homedir }}/Ansible/Build/Neovim"
         version:
         depth: 1
-    - name: Make
-      ansible.builtin.
-- name: Build Kitty
-  hosts: all
-  remote_user: "{{ user.username }}"
-  tasks:
-    - name: Clone the repo
 
-# make CMAKE_BUILD_TYPE=RelWithDebInfo
-# sudo make install
+#     - name: Make
+#       ansible.builtin.
+# - name: Build Kitty
+#   hosts: all
+#   remote_user: "{{ user.username }}"
+#   tasks:
+#     - name: Clone the repo

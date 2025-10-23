@@ -61,6 +61,7 @@ virsh net-define network.xml
 virsh net-start "name-of-the-network-from-network.xml"
 virsh define debian.xml
 virsh start "name-of-the-domain.xml"
+
 ```
 
 :::
@@ -116,8 +117,34 @@ To list all of the disks attached to the virtual machine, run
 `virsh domblklist --domain name-of-the-domain`. This will show the attached
 storage devices - look for the ISO under this list and copy the source.
 To detach this, run `virsh detach-disk --domain name-of-the-domain '/path/to/my/iso' --config`.
+If that does not work, try `virsh change-media name-of-the-domain --eject /path/to/my/iso`
 
 :::
+
+### Creating and Resizing Disks
+
+#### Resizing the 'Physical' Volume
+
+This step should be done with virtual machine shut off.
+When defining a domain that boots from an ISO, it is necessary to create a disk
+for the ISO to install the virtual machines data onto, this can be done with
+`qemu-image create -f qcow /path/to/the/disk 50G`.
+This is fine, but it easy to run out of space. To expand the space,
+
+1. Inspect the disk with `virt-filesystems --long -h --all /path/to/the/disk`,
+2. Choose the partition you wish to resize, e.g. `/dev/sda3`,
+3. Create a new disk using `qemu-image create -f qcow /path/to/the/newdisk 100G`.
+4. `virt-resize --expand /dev/sda3 /path/to/the/disk /path/to/the/newdisk`
+
+[More on how to use virt-resize](https://libguestfs.org/virt-resize.1.html).
+
+#### Resizing Logical Volumes
+
+After doing the above steps, reboot the virual machine and connect. This should
+make it possible to view the current partitions with `lsblk`. Identify the
+logical volume which ought to be expanded (in my case `/dev/rhel/root`) and run
+`lvexpand --extend +100%FREE /dev/rhel/root`. If this fails, it is advised that
+some space is cleared up on the disk.
 
 ## Connecting to the Virtual Machine
 

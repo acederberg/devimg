@@ -17,4 +17,7 @@
         state: directory
         path: "{{ item.value }}"
         recurse: true
+        owner: ansible
+        group: ansible
+        mode: '1700'
       with_dict: "{{ artifacts }}"

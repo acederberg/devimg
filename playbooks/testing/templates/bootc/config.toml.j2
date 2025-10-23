@@ -9,7 +9,7 @@ name = "{{ libvirt.ansible.username }}"
 password = "{{ libvirt.ansible.password_crypt }}"
 Description = "The user for ansible."
 key = "{{ domain.init.user.sshpubkey }}"
-groups = ["wheel", "docker"]
+groups = ["wheel"]
 uid = 1001
 gid = 1001
 
@@ -18,7 +18,7 @@ gid = 1001
 name = "{{ domain.init.user.username }}"
 password = "{{ domain.init.user.password_crypt }}"
 key = "{{ domain.init.user.sshpubkey }}"
-groups = ["wheel", "docker"]
+groups = ["wheel"]
 uid = 1000
 gid = 1000
 
