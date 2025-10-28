@@ -22,9 +22,11 @@
           - g++
           - cmake
           - ca-certificates
+          - unzip
         state: present
 - name: Debian Specific Basic Installs.
   hosts: debian
+  gather_facts: false
   tasks:
     - name: Debian Sepcific Installs
       ansible.builtin.apt:
@@ -36,6 +38,7 @@
   hosts:
     - debian
   become: true
+  gather_facts: false
   vars:
     gpg_key: "{{ artifacts.base }}/docker.asc"
     repo: https://download.docker.com/linux/debian
@@ -173,108 +176,227 @@
         user: "{{ user }}"
         groups: docker
 - name: Add Quarto
-  hosts: all
-  remote_user: "{{ user.username }}"
-  tasks:
-    - name: Get Quarto tarball
-      ansible.builtin.get_url:
-        url: https://github.com/quarto-dev/quarto-cli/releases/download/v1.8.24/quarto-1.8.24-linux-amd64.tar.gz
-        checksum: 6b83c1c9b6f2ce6454798b42260bd2ee184551d74debe817b8aaf28b09ac22d0
-        dest: "{{ user.homedir }}/Ansible/quarto.tar"
-    - name: Untar Quarto
-      become: true
-      ansible.builtin.unarchive:
-        creates: "/opt/quarto"
-        dest: "/opt/quarto"
-        src: "{{ user.homedir }}/Ansible/quarto.tar"
-    - name: Quarto Symlink
-      become: true
-      ansible.builtin.shell: ln -s /opt/quarto/bin/quarto /bin/quarto
-- name: Add NVM
-  hosts: all
-  tasks:
-    - name: Get NVM Installer
-      ansible.builtin.get_url:
-        url: https://raw.githubusercontent.com/nvm-sh/nvm/refs/tags/v0.40.3/install.sh
-        checksum: 2d8359a64a3cb07c02389ad88ceecd43f2fa469c06104f92f98df5b6f315275f
-        dest: "{{ user.homedir }}/ansible/install-nvm.sh"
-    - name: Run NVM Installer
-      if: ""
-      ansible.builtin.shell: bash "{{ user.homedir }}/ansible/install-nvm.sh"
-- name: Add PyEnv
-  hosts: all
-  tasks:
-    - name: Get PyEnv Installer
-      ansible.builtin.git:
-        repo: https://github.com/pyenv/pyenv.git
-        clone: yes
-        dest: "{{ user.homedir }}/.pyenv"
-        depth: 1
-        version: v2.6.8
-    - name: What was I supposed to do with this git repository?
-- name: ArgoCD
-  hosts: all
+  hosts:
+    - redhat
+    - debian
+  gather_facts: false
+  become: true
   vars:
-    argocd: 'tools.argocd'
+    quarto_archive: "{{ artifacts.base }}/quarto.tar"
+    quarto_version: "1.8.24"
+    quarto_opt: "/opt/quarto-{{ quarto_version }}"
+    quarto_binary: "{{ quarto_opt }}/bin/quarto"
+    quarto_checksum: sha256:6b83c1c9b6f2ce6454798b42260bd2ee184551d74debe817b8aaf28b09ac22d0
+  tasks:
+    - name: "Check if Installed"
+      ansible.builtin.stat:
+        path: "{{ quarto_binary }}"
+      register: quarto_binary_stat
+    - when: not quarto_binary_stat.stat.exists
+      block:
+        - name: Get Quarto tarball
+          ansible.builtin.get_url:
+            url: https://github.com/quarto-dev/quarto-cli/releases/download/v{{ quarto_version }}/quarto-{{ quarto_version }}-linux-amd64.tar.gz
+            checksum: "{{ quarto_checksum }}"
+            dest: "{{ quarto_archive }}"
+            mode: "0644"
+        - name: Untar Quarto
+          become: true
+          ansible.builtin.unarchive:
+            remote_src: true
+            dest: "/opt"
+            creates: "{{ quarto_opt }}"
+            src: "{{ quarto_archive }}"
+            mode: "0644"
+        - name: Quarto Symlink
+          become: true
+          ansible.builtin.file:
+            src: "{{ quarto_binary }}"
+            dest: /usr/local/bin/quarto
+            state: link
+# - name: Add NVM
+#   hosts: all
+#   tasks:
+#     - name: Get NVM Installer
+#       ansible.builtin.get_url:
+#         url: https://raw.githubusercontent.com/nvm-sh/nvm/refs/tags/v0.40.3/install.sh
+#         checksum: 2d8359a64a3cb07c02389ad88ceecd43f2fa469c06104f92f98df5b6f315275f
+#         dest: "{{ user.homedir }}/ansible/install-nvm.sh"
+#     - name: Run NVM Installer
+#       if: ""
+#       ansible.builtin.shell: bash "{{ user.homedir }}/ansible/install-nvm.sh"
+# - name: Add PyEnv
+#   hosts: all
+#   tasks:
+#     - name: Get PyEnv Installer
+#       ansible.builtin.git:
+#         repo: https://github.com/pyenv/pyenv.git
+#         clone: yes
+#         dest: "{{ user.homedir }}/.pyenv"
+#         depth: 1
+#         version: v2.6.8
+#     - name: What was I supposed to do with this git repository?
+- name: ArgoCD
+  hosts:
+    - redhat
+    - debian
+  # vars:
+  #   argocd: 'tools.argocd'
+  gather_facts: false
   tasks:
     - name: Download ArgoCD into bin
       become: true
       ansible.builtin.get_url:
-        url: https://github.com/{{ argocd.repo }}/releases/download/{{ argocd.version }}/argocd-linux-{{ arch }}
-        checksum: '{{ argocd.checksum }}'
-        dest: /usr/local/bin
+        # url: https://github.com/argoproj/argo-cd/releases/download/v3.1.9/argocd-darwin-amd64
+        url: https://github.com/{{ tools.argocd.repo }}/releases/download/v{{ tools.argocd.version }}/argocd-linux-{{ arch }}
+        checksum: '{{ tools.argocd.checksum }}'
+        dest: /usr/local/bin/argocd
         # All for by owner and group. Executable and readable for others.
         mode: '0775'
 - name: Add Helm
+  hosts:
+    - redhat
+    - debian
+  gather_facts: false
   vars:
-    helm: 'tools.helm'
-    dest-archive: "{{ user.homedir }}/archives/helm.tar.gz"
-    dest-unarchive: "{{ user.homedir }}/archives/helm"
+    helm_archive: "{{ artifacts.base }}/helm.tar.gz"
+    helm_unarchive: "{{ artifacts.base }}/helm"
+    helm_binary: "/usr/local/bin/helm"
   tasks:
-    - name: Download Helm
-      ansible.builtin.get_url:
-        url: https://get.helm.sh/helm-v{{ version }}-linux-{{ arch }}.tar.gz
-        checksum: '{{ argocd.checksum }}'
-        dest: '{{ dest-archive }}'
-    - name: Extract Helm
-      ansible.builtin.unarchive:
-        dest: '{{ dest-unarchive }}'
-        src: '{{ dest-archive }}'
-    - name: Move Helm
-      become: true
-      ansible.builtin.copy:
-        src: '{{ dest-unarchive }}/helm'
-        dest: '/usr/local/bin'
-        checksum: '{{ argocd.checksum }}'
-        mode: '0775'
+    - name: Check Helm Installed
+      ansible.builtin.stat:
+        path: "{{ helm_binary }}"
+      register: helm_binary_stat
+    - name: Install Helm
+      when: not helm_binary_stat.stat.exists
+      block:
+        - name: Download Helm
+          ansible.builtin.get_url:
+            url: https://get.helm.sh/helm-v{{ tools.helm.version }}-linux-{{ arch }}.tar.gz
+            checksum: '{{ tools.helm.checksum }}'
+            dest: '{{ helm_archive }}'
+            mode: "0644"
+        - name: Create Helm Archive Folder
+          ansible.builtin.file:
+            path: '{{ helm_unarchive }}'
+            state: "directory"
+            mode: "0644"
+            # mode: directory
+        - name: Extract Helm
+          become: true
+          ansible.builtin.unarchive:
+            remote_src: true
+            creates: '{{ helm_unarchive }}/linux-amd64'
+            dest: '{{ helm_unarchive }}/'
+            src: '{{ helm_archive }}'
+            mode: "0644"
+        - name: Move Helm
+          become: true
+          ansible.builtin.copy:
+            remote_src: true
+            src: '{{ helm_unarchive }}/linux-amd64/helm'
+            dest: '{{ helm_binary }}'
+            mode: '0755'
 - name: Add KubeCtl
-  hosts: all
-  vars:
-    kubectl: 'tools.kubectl'
+  hosts:
+    - redhat
+    - debian
+  gather_facts: false
+  become: true
   tasks:
     - name: Download KubeCtl into bin
       ansible.builtin.get_url:
-        url: https://dl.k8s.io/release/v{{ kubectl.version }}/bin/linux/{{ arch }}/kubectl"
-        checksum: "{{ kubectl.checksum }}"
-        dest: /usr/local/bin
+        url: https://dl.k8s.io/release/v{{ tools.kubectl.version }}/bin/linux/{{ arch }}/kubectl
+        checksum: "{{ tools.kubectl.checksum }}"
+        dest: /usr/local/bin/kubectl
         mode: '0775'
 - name: Add Terraform
-  hosts: all
+  hosts:
+    - redhat
+    - debian
+  gather_facts: false
   vars:
-    terraform: 'tools.terraform'
-    dest-archive: "{{ user.homedir }}/archives/terraform.zip"
-    dest-unarchive: "{{ user.homedir }}/archives/terraform"
+    tf_basename: "terraform_{{ tools.terraform.version }}"
+    tf_baseurl: "https://releases.hashicorp.com/terraform/{{ tools.terraform.version }}"
+    tf_shasums: "{{artifacts.base }}/{{ tf_basename }}_SHA256SUMS"
+    tf_archive_name: "{{ tf_basename }}_linux_{{ arch }}.zip"
+    tf_archive: "{{ artifacts.base }}/{{ tf_archive_name }}"
+    tf_unarchive: "{{ artifacts.base }}/terraform"
+    tf_binary: "/usr/local/bin/tf"
+    hc_pgpkey: "{{ artifacts.base }}/hc.txt"
+    tf_shasums_select_pattern: ".*{{ tf_archive_name }}"
+    tf_url: "{{ tf_baseurl }}/{{ tf_archive_name }}"
   tasks:
-    - name: Download Terraform
-      ansible.builtin.get_url:
-        url: https://releases.hashicorp.com/terraform/{{ terraform.version }}/terraform_{{ terraform.version }}_linux_{{ arch }}.zip
-        dest: '{{ dest-archive }}'
-    - name: Extract Terraform
-      ansible.builtin.unarchive:
-        dest: '{{ dest-archive }}'
-        src: '{{ dest-archive }}'
-    - name: Move Terraform into bin
-      become: true
-      ansible.builtin.copy:
-        src: '{{ dest-archive }}/terraform'
-        mode: '0775'
+    - name: Check Terraform Install
+      ansible.builtin.stat:
+        path: "{{ tf_binary }}"
+      register: tf_binary_stat
+    - name: Install Terraform
+      when: not tf_binary_stat.stat.exists
+      block:
+        - name: Get Shasum
+          block:
+            - name: Download Shasums
+              ansible.builtin.get_url:
+                url: '{{ tf_baseurl }}/{{ tf_basename }}_SHA256SUMS'
+                dest: '{{ tf_shasums }}'
+                mode: "0644"
+            - name: Read ShaSums
+              ansible.builtin.slurp:
+                src: '{{ tf_shasums }}'
+              register: tf_shasums_file
+            - name: Decoded
+              block:
+                - name: Set `tf_shasums_decoded`
+                  ansible.builtin.set_fact:
+                    tf_shasums_decoded: '{{ tf_shasums_file.content | b64decode }}'
+                - name: Show `tf_shasums_decoded`
+                  ansible.builtin.debug:
+                    var: tf_shasums_decoded
+            - name: "Split"
+              block:
+                - name: Set `tf_shasums_split`
+                  ansible.builtin.set_fact:
+                    tf_shasums_split: "{{ tf_shasums_decoded | split('\n')  }}"
+                - name: Show `tf_shasums_split`
+                  ansible.builtin.debug:
+                    var: tf_shasums_split
+            - name: Select
+              block:
+                - name: Set `tf_shasums_select`
+                  ansible.builtin.set_fact:
+                    tf_shasums_select: "{{ tf_shasums_split | select('match', tf_shasums_select_pattern )  }}"
+                - name: Show `tf_shasums_select`
+                  ansible.builtin.debug:
+                    var: tf_shasums_select_pattern
+                    # - ansible.builtin.debug:
+                    #     var: tf_shasums_select
+            - name: Unwrap `tf_shasums_select`
+              ansible.builtin.set_fact:
+                tf_shasum: "{{ tf_shasums_select | first | split | first }}"
+        - name: Download Terraform
+          ansible.builtin.get_url:
+            url: '{{ tf_url }}'
+            dest: '{{ tf_archive }}'
+            mode: "0644"
+            checksum: "{{ tools.terraform.checksum }}"
+        - name: Create Terraform Archive Folder
+          ansible.builtin.file:
+            state: "directory"
+            path: "{{ tf_unarchive }}"
+            mode: "0644"
+        - name: Extract Terraform
+          become: true
+          ansible.builtin.unarchive:
+            remote_src: true
+            creates: '{{ tf_unarchive }}/terraform'
+            dest: '{{ tf_unarchive }}'
+            src: '{{ tf_archive }}'
+            mode: "0644"
+        - name: Move Terraform into bin
+          become: true
+          ansible.builtin.copy:
+            remote_src: true
+            src: '{{ tf_unarchive }}/terraform'
+            dest: '{{ tf_binary }}'
+            mode: '0775'
