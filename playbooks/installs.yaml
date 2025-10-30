@@ -1,13 +1,29 @@
 # vi: set ft=yaml.ansible :
 - name: "Create the Ansible Directory"
+  tags: always
   hosts:
     - debian
     - redhat
   tasks:
     - name: "Setup Context."
       ansible.builtin.include_tasks: "./context.yaml"
+- name: Add Primary User to Wheel Group
+  tags:
+    - base
+    - users
+  become: true
+  hosts:
+    - redhat
+  tasks:
+    - name: "Usermod"
+      ansible.builtin.user:
+        user: "{{ primary_user }}"
+        groups: wheel
+        append: true
 - name: Update and Upgrade, Required Deps
   become: true
+  tags:
+    - base
   hosts:
     - debian
     - redhat
@@ -25,6 +41,8 @@
           - unzip
         state: present
 - name: Debian Specific Basic Installs.
+  tags:
+    - base
   hosts: debian
   gather_facts: false
   tasks:
@@ -34,10 +52,13 @@
           - python3-pip
           - python3-venv
         state: present
+# NOTE(acederberg): This (docker stuff) can be its own role.
 - name: (Debian) Add Docker and Docker Compose
   hosts:
     - debian
   become: true
+  tags:
+    - docker
   gather_facts: false
   vars:
     gpg_key: "{{ artifacts.base }}/docker.asc"
@@ -106,6 +127,8 @@
 - name: (RedHat) Add Docker and Docker Compose
   hosts:
     - redhat
+  tags:
+    - docker
   gather_facts: false
   become: true
   vars:
@@ -162,7 +185,11 @@
               - docker-compose-plugin
 - name: (Common) Add Docker and Docker Compose
   hosts: [redhat, debian]
+  tags:
+    - docker
+    - users
   gather_facts: false
+  become: true
   tasks:
     - name: "Start Docker"
       become: true
@@ -175,10 +202,15 @@
       ansible.builtin.user:
         user: "{{ user }}"
         groups: docker
+        append: true
+# NOTE(acederberg): Tools role.
 - name: Add Quarto
   hosts:
     - redhat
     - debian
+  tags:
+    - quarto
+    - tools
   gather_facts: false
   become: true
   vars:
@@ -192,7 +224,8 @@
       ansible.builtin.stat:
         path: "{{ quarto_binary }}"
       register: quarto_binary_stat
-    - when: not quarto_binary_stat.stat.exists
+    - name: Install Quarto
+      when: not quarto_binary_stat.stat.exists
       block:
         - name: Get Quarto tarball
           ansible.builtin.get_url:
@@ -236,10 +269,56 @@
 #         depth: 1
 #         version: v2.6.8
 #     - name: What was I supposed to do with this git repository?
+- name: GoLang
+  hosts:
+    - redhat
+    - debian
+  tags:
+    - devops
+    - tools
+    - golang
+  gather_facts: false
+  vars:
+    golang_archive_name: go{{ tools.go.version }}.linux-{{ arch }}.tar.gz
+    golang_archive_url: https://go.dev/dl/{{ golang_archive_name }}
+    golang_archive_dest: "{{ artifacts.base }}/{{ golang_archive_name }}"
+  tasks:
+    - name: Check Go Install
+      ansible.builtin.stat:
+        path: "/usr/local/bin/go"
+      register: golang_binary_stat
+    - name: Install Go
+      when: not golang_binary_stat.stat.exists
+      block:
+        - name: "Download Go"
+          become: true
+          ansible.builtin.get_url:
+            url: "{{ golang_archive_url }}"
+            dest: "{{ golang_archive_dest }}"
+            mode: "0644"
+        - name: "Extract the `go` Archive."
+          become: true
+          ansible.builtin.unarchive:
+            remote_src: true
+            src: "{{ golang_archive_dest }}"
+            creates: /usr/local/go
+            dest: /usr/local
+        - name: "Create binary link"
+          become: true
+          ansible.builtin.file:
+            src: "/usr/local/go/bin/{{ item }}"
+            dest: "/usr/bin/{{ item }}"
+            state: "link"
+          loop:
+            - gofmt
+            - go
 - name: ArgoCD
   hosts:
     - redhat
     - debian
+  tags:
+    - devops
+    - tools
   # vars:
   #   argocd: 'tools.argocd'
   gather_facts: false
@@ -257,6 +336,9 @@
   hosts:
     - redhat
     - debian
+  tags:
+    - devops
+    - tools
   gather_facts: false
   vars:
     helm_archive: "{{ artifacts.base }}/helm.tar.gz"
@@ -301,6 +383,9 @@
   hosts:
     - redhat
     - debian
+  tags:
+    - devops
+    - tools
   gather_facts: false
   become: true
   tasks:
@@ -314,6 +399,9 @@
   hosts:
     - redhat
     - debian
+  tags:
+    - devops
+    - tools
   gather_facts: false
   vars:
     tf_basename: "terraform_{{ tools.terraform.version }}"
@@ -399,4 +487,53 @@
             remote_src: true
             src: '{{ tf_unarchive }}/terraform'
             dest: '{{ tf_binary }}'
-            mode: '0775'
+            mode: '0755'
+- name: Install Kitty
+  hosts:
+    - redhat
+    - debian
+  tags:
+    - tools
+    - installs
+    - kitty
+  gather_facts: false
+  vars:
+    kitty_archive_name: "kitty-{{tools.kitty.version}}-{{ ansible_architecture }}.txz"
+    kitty_url: "https://github.com/kovidgoyal/kitty/releases/download/v{{ tools.kitty.version }}/{{ kitty_archive_name }}"
+    kitty_archive_dest: "{{ artifacts.base }}/{{ kitty_archive_name }}"
+  tasks:
+    - name: "Check Kitty Install"
+      ansible.builtin.stat:
+        path: "/usr/local/bin/kitty"
+      register: kitty_binaries_stat
+    - name: "Install Kitty"
+      when: not kitty_binaries_stat.stat.exists
+      block:
+        - name: "Download Kitty"
+          ansible.builtin.get_url:
+            url: "{{ kitty_url }}"
+            checksum: "{{ tools.kitty.checksum }}"
+            mode: '0644'
+            dest: "{{ kitty_archive_dest }}"
+        - name: Ensure Kitty Directory
+          become: true
+          ansible.builtin.file:
+            state: "directory"
+            path: /opt/kitty
+            mode: "1644"
+        - name: "Provide Kitty Binaries."
+          become: true
+          ansible.builtin.unarchive:
+            remote_src: true
+            src: "{{ kitty_archive_dest }}"
+            dest: "/opt/kitty"
+            creates: /opt/kitty/bin
+        - name: "Link Kitty Binaries"
+          become: true
+          ansible.builtin.file:
+            state: "link"
+            src: "/opt/kitty/bin/{{ item }}"
+            dest: "/usr/local/bin/{{ item }}"
+          loop:
+            - kitty
+            - kitten

@@ -23,8 +23,14 @@ all:
       terraform:
         version: 1.13.4
         checksum: sha256:98aa516201e948306698efd9954ab4cc0d1227c2578ba56245898b5f679e590b
+      go:
+        version: 1.25.3
+        checksum: sha256
+      kitty:
+        version: 0.43.1
+        checksum: sha256:f2026ef8cec6fd21b58e3ae501f707c2fc922ddb9b3e79685917fc60197449fb
+    primary_user: acederberg
     libvirt:
-      images_dir: "{{ inventory_dir }}/.images"
       network:
         name: 'devimg'
         bridge: virbr10

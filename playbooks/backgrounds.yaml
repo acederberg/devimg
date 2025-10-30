@@ -1,59 +1,89 @@
 # vi: set ft=yaml.ansible :
 # DESKTOP CUSTOMIZATION
+# TODO(acederberg): ROLE
 - name: Set Context
-  hosts: localhost
+  hosts:
+    - localhost
+    # - redhat
+  tags:
+    - backgrounds
+    - desktop
   tasks:
-    - ansible.builtin.include_tasks:
-        file: ./testing/context.yaml
-    - ansible.builtin.set_fact:
-        gnome_background_properties: /usr/share/gnome-background-properties
-        dconf_local_d: /etc/dconf/db/local.d
-        wallpapers_dir: /usr/local/share/backgrounds/
+    - name: Include Context
+      ansible.builtin.include_tasks:
+        file: ./context.yaml
 - name: Configure Backgrounds
-  hosts: localhost
+  gather_facts: false
+  hosts:
+    - localhost
+    # - redhat
+  vars:
+    gnome_background_properties: /usr/share/gnome-background-properties
+    dconf_local_d: /etc/dconf/db/local.d
+    backgrounds_dir: /usr/local/share/backgrounds/
+    background_conf: '{{ lookup("template", "./templates/00-backgrounds.conf.j2" ) }}'
+    backgrounds_xml: '{{ lookup("template", "./templates/backgrounds.xml.j2") }}'
+    screensaver_conf: '{{ lookup("template", "./templates/01-screensaver.conf.j2") }}'
+  tags:
+    - backgrounds
+    - desktop
   tasks:
-    - name: Add the default wallpapers to the system.
+    - name: Add Backgrounds
       block:
-        - name: Copy Wallpapers into Shared.
+        - name: Get all of the background paths
+          ansible.builtin.find:
+            paths: "{{ backgrounds.directory }}"
+          register: backgrounds_directory_files
+        - name: Copy Backgrounds into Shared System Location
           become: true
           ansible.builtin.copy:
-            src: '{{ backgrounds.directory }}'
-            dest: '{{ wallpapers_dir }}'
-        - ansible.builtin.find:
-            paths: '{{ wallpapers_dir }}'
+            src: '{{ item.path }}'
+            dest: "{{ backgrounds_dir }}/{{ item.path | split('/') | last }}"
+            mode: '0744'
+          loop: '{{ backgrounds_directory_files.files }}'
+    - name: Configure Available Backgrounds
+      block:
+        - name: "List Available Backgrounds for GNOME Configuration"
+          ansible.builtin.find:
+            paths: '{{ backgrounds_dir }}'
           register: background_paths
-        - ansible.builtin.set_fact:
-            backgrounds_xml: '{{ lookup("template", "./templates/backgrounds.xml.j2") }}'
-        - ansible.builtin.copy:
+        - name: "Generate GNOME Backgrounds Configuration"
+          ansible.builtin.copy:
             content: '{{ backgrounds_xml }}'
-            dest: '{{ artifacts.templated }}/backgrounds.xml'
-        - name: Render Destops XML.
+            dest: '{{ artifacts.backgrounds }}/backgrounds.xml'
+            mode: '0744'
+        - name: "Save GNOME Backgrounds Configuration"
           become: true
           ansible.builtin.copy:
             content: '{{ backgrounds_xml }}'
             dest: '{{ gnome_background_properties }}/custom.xml'
-    - name: Set the default wallpaper for the desktop.
+            mode: '0744'
+    - name: Set the default wallpaper for the desktop
       block:
-        - ansible.builtin.set_fact:
-            background_conf: '{{ lookup("template", "./templates/00-backgrounds.conf.j2" ) }}'
-        - ansible.builtin.copy:
+        - name: "Generate `dconf` Backgrounds Configuration."
+          ansible.builtin.copy:
             content: '{{ background_conf }}'
-            dest: '{{ artifacts.templated }}/background.conf'
-        - become: true
+            dest: '{{ artifacts.backgrounds }}/background.conf'
+            mode: '0744'
+        - name: "Save `dconf` Backgrounds Configuration"
+          become: true
           ansible.builtin.copy:
             content: '{{ background_conf }}'
             dest: '{{ dconf_local_d }}/00-background'
+            mode: '0744'
     - name: Set the default wallpaper for the homescreen.
       block:
-        - ansible.builtin.set_fact:
-            screensaver_conf: '{{ lookup("template", "./templates/01-screensaver.conf.j2") }}'
-        - ansible.builtin.copy:
+        - name: "Generate `dconf` Screensaver Config"
+          ansible.builtin.copy:
             content: '{{ screensaver_conf }}'
-            dest: '{{ artifacts.templated }}/screensaver.conf'
-        - become: true
+            dest: '{{ artifacts.backgrounds }}/screensaver.conf'
+            mode: '0744'
+        - name: "Save `dconf` Screensaver Config"
+          become: true
           ansible.builtin.copy:
             content: '{{ screensaver_conf }}'
             dest: '{{ dconf_local_d }}/01-screensaver'
+            mode: '0744'
     - name: Restart `dconf`.
       become: true
       ansible.builtin.shell: "dconf update"

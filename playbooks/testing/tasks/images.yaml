@@ -48,7 +48,7 @@
             cmd: |
               set -o pipefail
               qemu-img measure \
-                {dest_qemu} \
+                {{ dest_qemu }} \
                 --output=json \
               | jq '.["fully-allocated"]'
         - name: Compute Image Size Diff, Part 1

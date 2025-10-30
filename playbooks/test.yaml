@@ -1,5 +1,0 @@
-- name: "foo"
-  hosts: [redhat]
-  tasks:
-    - ansible.builtin.debug:
-        var: "user"

@@ -1,7 +1,9 @@
 # vi: set ft=yaml.ansible :
-- hosts: localhost
+- name: Context
+  hosts: localhost
   tasks:
-    - ansible.builtin.include_tasks: ./context.yaml
+    - name: Include Context
+      ansible.builtin.include_tasks: ./context.yaml
 # - name: Setup Libvirt Network
 #   hosts: localhost
 #   pre_tasks:
