@@ -1,0 +1,65 @@
+# vi: set ft=yaml.ansible :
+- name: "Set Facts"
+  ansible.builtin.set_fact:
+    __docker_debian_gpg_key: "{{ artifacts.base }}/docker.asc"
+    __docker_debian_repo: https://download.docker.com/linux/debian
+- name: "Check Docker Install"
+  ansible.builtin.stat:
+    path: /usr/bin/docker
+  register: docker_stat
+- name: "Install Docker"
+  when: not docker_stat.stat.exists
+  block:
+    - name: Check for Deb Config
+      ansible.builtin.stat:
+        path: /etc/apt/keyring
+      register: keyring_stat
+    - name: Generate Deb Config
+      when: keyring_stat.stat.exists
+      block:
+        - name: Create keyring directory
+          ansible.builtin.file:
+            path: /etc/apt/keyring
+            mode: "0755"
+            owner: root
+            group: root
+        - name: Download the GPG Key
+          ansible.builtin.get_url:
+            url: https://download.docker.com/linux/debian/gpg
+            dest: "{{ __docker_debian_gpg_key }}"
+            mode: "0644"
+            owner: "{{ ansible_user }}"
+            group: "{{ ansible.user }}"
+        - name: Install the GPG Key.
+          ansible.builtin.copy:
+            src: "{{ __docker_debian_gpg_key }}"
+            dest: /etc/apt/keyrings/docker.asc
+            mode: "0644"
+            owner: root
+            group: root
+        - name: Read and parse .env file
+          ansible.builtin.set_fact:
+            _os_release: "{{ lookup('file', '/os/release') | splitlines | select('match', '^[A-Z_]+=') | map('split', '=', 1) | list | dict }}"
+        - name: Check the `VERSION_CODENAME` is defined.
+          when: not _os_release.VERSION_CODENAME
+          ansible.builtin.fail:
+            msg: "`VERSION_CODENAME` was not found in `/os.release`."
+        - name: Add Docker Repository
+          ansible.builtin.copy:
+            mode: "0644"
+            owner: root
+            group: root
+            dest: /etc/apt/sources.list.d/docker.list
+            content: >
+              deb [arch={{ ansible_architecture }} signed-by={{ __docker_debian_gpg_key }}] {{ __docker_debian_repo }} {{ _os_release.VERSION_CODENAME }} stable
+
+    - name: Install Docker Container Engine
+      apt:
+        state: present
+        update_cache: true
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin

@@ -1,0 +1,13 @@
+argument_specs:
+  main:
+    short_description: Install Docker and Compose on a Common OS.
+    options:
+      docker_users:
+        type: list
+        elements: str
+        required: false
+        description: Users to add to the `docker` group.
+      os_family:
+        type: string
+        required: true
+        description: OS type.

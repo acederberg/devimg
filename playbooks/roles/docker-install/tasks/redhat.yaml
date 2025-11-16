@@ -1,0 +1,53 @@
+# vi: set ft=yaml.ansible :
+- name: (RedHat) Add Docker and Docker Compose
+  ansible.builtin.set_fact:
+    __docker_redhat_repo_config: "{{ artifacts.base }}/docker-ce.repo"
+- name: Check Docker Installed
+  ansible.builtin.stat:
+    path: /usr/bin/docker
+  register: docker_stat
+- name: Install Docker
+  when: not docker_stat.stat.exists
+  block:
+    - name: Uninstall Existing Depends
+      ansible.builtin.dnf:
+        state: absent
+        name:
+          - docker
+          - docker-client
+          - docker-client-latest
+          - docker-common
+          - docker-latest
+          - docker-latest-logrotate
+          - docker-logrotate
+          - docker-engine
+          - podman
+          - runc
+    - name: "Add Core Plugins for DNF"
+      ansible.builtin.dnf:
+        state: present
+        name:
+          - dnf-plugins-core
+    - name: "Get Repo Configuration."
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/rhel/docker-ce.repo
+        dest: "{{ __docker_redhat_repo_config }}"
+        mode: "0644"
+        owner: ansible
+        group: ansible
+    - name: "Provide Repo Configuration."
+      ansible.builtin.copy:
+        src: "{{ __docker_redhat_repo_config }}"
+        remote_src: true
+        dest: "/etc/yum.repos.d"
+        mode: "0644"
+        owner: root
+        group: root
+    - name: "Install Docker"
+      ansible.builtin.dnf:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin

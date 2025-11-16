@@ -1,0 +1,22 @@
+# vi: set ft=yaml.ansible :
+- name: "(Debian) Install Docker"
+  ansible.builtin.include_tasks:
+    file: ./debian.yaml
+- name: "(Redhat): Install Docker"
+  ansible.builtin.include_role:
+    file: ./redhat.yaml
+- name: (Common) Docker Post Install Chores
+  block:
+    - name: "Ensure Docker Started"
+      become: true
+      # ansible.builtin.systemd_service:
+      ansible.builtin.systemd:
+        name: docker
+        enabled: true
+        state: started
+    - name: Ensure Docker Group Membership
+      ansible.builtin.user:
+        user: "{{ user }}"
+        groups: docker
+        append: true
+      loop: "{{ docker_users }}"
