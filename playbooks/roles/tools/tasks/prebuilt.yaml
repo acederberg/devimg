@@ -1,80 +1,38 @@
 # vi: set ft=yaml.ansible :
-- name: "Create the Ansible Directory"
-  tags: always
-  hosts:
-    - debian
-    - redhat
-  tasks:
-    - name: "Setup Context."
-      ansible.builtin.include_tasks: "./context.yaml"
-- name: Add Primary User to Wheel Group
-  tags:
-    - base
-    - users
-  become: true
-  hosts:
-    - redhat
-  tasks:
-    - name: "Usermod"
-      ansible.builtin.user:
-        user: "{{ primary_user }}"
-        groups: wheel
-        append: true
-- name: Update and Upgrade, Required Deps
-  become: true
-  tags:
-    - base
-  hosts:
-    - debian
-    - redhat
-  tasks:
-    - name: Install Basic Utilities
-      become: true
-      ansible.builtin.package:
-        name:
-          - git
-          - curl
-          - wget
-          - g++
-          - cmake
-          - ca-certificates
-          - unzip
-        state: present
-- name: Debian Specific Basic Installs.
-  tags:
-    - base
-  hosts: debian
-  gather_facts: false
-  tasks:
-    - name: Debian Sepcific Installs
-      ansible.builtin.apt:
-        name:
-          - python3-pip
-          - python3-venv
-        state: present
-- name: Install Docker
-  hosts: all
-  roles:
-    - name: docker
-      vars:
-        os_familiy: "{{ os_familiy }}"
-# NOTE(acederberg): Tools role.
+#
+# - name: Add NVM
+#   hosts: all
+#   tasks:
+#     - name: Get NVM Installer
+#       ansible.builtin.get_url:
+#         url: https://raw.githubusercontent.com/nvm-sh/nvm/refs/tags/v0.40.3/install.sh
+#         checksum: 2d8359a64a3cb07c02389ad88ceecd43f2fa469c06104f92f98df5b6f315275f
+#         dest: "{{ user.homedir }}/ansible/install-nvm.sh"
+#     - name: Run NVM Installer
+#       if: ""
+#       ansible.builtin.shell: bash "{{ user.homedir }}/ansible/install-nvm.sh"
+# - name: Add PyEnv
+#   hosts: all
+#   tasks:
+#     - name: Get PyEnv Installer
+#       ansible.builtin.git:
+#         repo: https://github.com/pyenv/pyenv.git
+#         clone: yes
+#         dest: "{{ user.homedir }}/.pyenv"
+#         depth: 1
+#         version: v2.6.8
+#     - name: What was I supposed to do with this git repository?
 - name: Add Quarto
-  hosts:
-    - redhat
-    - debian
   tags:
     - quarto
     - tools
-  gather_facts: false
   become: true
   vars:
     quarto_archive: "{{ artifacts.base }}/quarto.tar"
     quarto_version: "1.8.24"
     quarto_opt: "/opt/quarto-{{ quarto_version }}"
     quarto_binary: "{{ quarto_opt }}/bin/quarto"
-    quarto_checksum: sha256:6b83c1c9b6f2ce6454798b42260bd2ee184551d74debe817b8aaf28b09ac22d0
-  tasks:
+  block:
     - name: "Check if Installed"
       ansible.builtin.stat:
         path: "{{ quarto_binary }}"
@@ -102,42 +60,16 @@
             src: "{{ quarto_binary }}"
             dest: /usr/local/bin/quarto
             state: link
-# - name: Add NVM
-#   hosts: all
-#   tasks:
-#     - name: Get NVM Installer
-#       ansible.builtin.get_url:
-#         url: https://raw.githubusercontent.com/nvm-sh/nvm/refs/tags/v0.40.3/install.sh
-#         checksum: 2d8359a64a3cb07c02389ad88ceecd43f2fa469c06104f92f98df5b6f315275f
-#         dest: "{{ user.homedir }}/ansible/install-nvm.sh"
-#     - name: Run NVM Installer
-#       if: ""
-#       ansible.builtin.shell: bash "{{ user.homedir }}/ansible/install-nvm.sh"
-# - name: Add PyEnv
-#   hosts: all
-#   tasks:
-#     - name: Get PyEnv Installer
-#       ansible.builtin.git:
-#         repo: https://github.com/pyenv/pyenv.git
-#         clone: yes
-#         dest: "{{ user.homedir }}/.pyenv"
-#         depth: 1
-#         version: v2.6.8
-#     - name: What was I supposed to do with this git repository?
 - name: GoLang
-  hosts:
-    - redhat
-    - debian
   tags:
     - devops
     - tools
     - golang
-  gather_facts: false
   vars:
-    golang_archive_name: go{{ tools.go.version }}.linux-{{ arch }}.tar.gz
-    golang_archive_url: https://go.dev/dl/{{ golang_archive_name }}
+    golang_archive_name: go{{ tools.golang.version }}.linux-{{ arch }}.tar.gz
+    golang_archive_url: https://golang.dev/dl/{{ golang_archive_name }}
     golang_archive_dest: "{{ artifacts.base }}/{{ golang_archive_name }}"
-  tasks:
+  block:
     - name: Check Go Install
       ansible.builtin.stat:
         path: "/usr/local/bin/go"
@@ -168,38 +100,26 @@
             - gofmt
             - go
 - name: ArgoCD
-  hosts:
-    - redhat
-    - debian
   tags:
     - devops
     - tools
-  # vars:
-  #   argocd: 'tools.argocd'
-  gather_facts: false
-  tasks:
+  block:
     - name: Download ArgoCD into bin
       become: true
       ansible.builtin.get_url:
-        # url: https://github.com/argoproj/argo-cd/releases/download/v3.1.9/argocd-darwin-amd64
-        url: https://github.com/{{ tools.argocd.repo }}/releases/download/v{{ tools.argocd.version }}/argocd-linux-{{ arch }}
+        url: https://github.com/argoproj/argo-cd/releases/download/v{{ tools.argocd.version }}/argocd-linux-{{ arch }}
         checksum: '{{ tools.argocd.checksum }}'
         dest: /usr/local/bin/argocd
-        # All for by owner and group. Executable and readable for others.
         mode: '0775'
 - name: Add Helm
-  hosts:
-    - redhat
-    - debian
   tags:
     - devops
     - tools
-  gather_facts: false
   vars:
     helm_archive: "{{ artifacts.base }}/helm.tar.gz"
     helm_unarchive: "{{ artifacts.base }}/helm"
     helm_binary: "/usr/local/bin/helm"
-  tasks:
+  block:
     - name: Check Helm Installed
       ansible.builtin.stat:
         path: "{{ helm_binary }}"
@@ -235,15 +155,11 @@
             dest: '{{ helm_binary }}'
             mode: '0755'
 - name: Add KubeCtl
-  hosts:
-    - redhat
-    - debian
   tags:
     - devops
     - tools
-  gather_facts: false
   become: true
-  tasks:
+  block:
     - name: Download KubeCtl into bin
       ansible.builtin.get_url:
         url: https://dl.k8s.io/release/v{{ tools.kubectl.version }}/bin/linux/{{ arch }}/kubectl
@@ -251,13 +167,9 @@
         dest: /usr/local/bin/kubectl
         mode: '0775'
 - name: Add Terraform
-  hosts:
-    - redhat
-    - debian
   tags:
     - devops
     - tools
-  gather_facts: false
   vars:
     tf_basename: "terraform_{{ tools.terraform.version }}"
     tf_baseurl: "https://releases.hashicorp.com/terraform/{{ tools.terraform.version }}"
@@ -269,7 +181,7 @@
     hc_pgpkey: "{{ artifacts.base }}/hc.txt"
     tf_shasums_select_pattern: ".*{{ tf_archive_name }}"
     tf_url: "{{ tf_baseurl }}/{{ tf_archive_name }}"
-  tasks:
+  block:
     - name: Check Terraform Install
       ansible.builtin.stat:
         path: "{{ tf_binary }}"
@@ -288,6 +200,7 @@
               ansible.builtin.slurp:
                 src: '{{ tf_shasums }}'
               register: tf_shasums_file
+            # TODO(acederberg): Maybe just write this as a filter?
             - name: Decoded
               block:
                 - name: Set `tf_shasums_decoded`
@@ -312,8 +225,6 @@
                 - name: Show `tf_shasums_select`
                   ansible.builtin.debug:
                     var: tf_shasums_select_pattern
-                    # - ansible.builtin.debug:
-                    #     var: tf_shasums_select
             - name: Unwrap `tf_shasums_select`
               ansible.builtin.set_fact:
                 tf_shasum: "{{ tf_shasums_select | first | split | first }}"
@@ -343,52 +254,3 @@
             src: '{{ tf_unarchive }}/terraform'
             dest: '{{ tf_binary }}'
             mode: '0755'
-- name: Install Kitty
-  hosts:
-    - redhat
-    - debian
-  tags:
-    - tools
-    - installs
-    - kitty
-  gather_facts: false
-  vars:
-    kitty_archive_name: "kitty-{{tools.kitty.version}}-{{ ansible_architecture }}.txz"
-    kitty_url: "https://github.com/kovidgoyal/kitty/releases/download/v{{ tools.kitty.version }}/{{ kitty_archive_name }}"
-    kitty_archive_dest: "{{ artifacts.base }}/{{ kitty_archive_name }}"
-  tasks:
-    - name: "Check Kitty Install"
-      ansible.builtin.stat:
-        path: "/usr/local/bin/kitty"
-      register: kitty_binaries_stat
-    - name: "Install Kitty"
-      when: not kitty_binaries_stat.stat.exists
-      block:
-        - name: "Download Kitty"
-          ansible.builtin.get_url:
-            url: "{{ kitty_url }}"
-            checksum: "{{ tools.kitty.checksum }}"
-            mode: '0644'
-            dest: "{{ kitty_archive_dest }}"
-        - name: Ensure Kitty Directory
-          become: true
-          ansible.builtin.file:
-            state: "directory"
-            path: /opt/kitty
-            mode: "1644"
-        - name: "Provide Kitty Binaries."
-          become: true
-          ansible.builtin.unarchive:
-            remote_src: true
-            src: "{{ kitty_archive_dest }}"
-            dest: "/opt/kitty"
-            creates: /opt/kitty/bin
-        - name: "Link Kitty Binaries"
-          become: true
-          ansible.builtin.file:
-            state: "link"
-            src: "/opt/kitty/bin/{{ item }}"
-            dest: "/usr/local/bin/{{ item }}"
-          loop:
-            - kitty
-            - kitten

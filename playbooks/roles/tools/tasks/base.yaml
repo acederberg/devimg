@@ -1,0 +1,29 @@
+# vi: set ft=yaml.ansible :
+- name: Update and Upgrade, Required Deps
+  tags:
+    - base
+  block:
+    - name: Install Basic Utilities
+      become: true
+      ansible.builtin.package:
+        name:
+          - git
+          - curl
+          - wget
+          - g++
+          - cmake
+          - ca-certificates
+          - unzip
+        state: present
+- name: Debian Specific Basic Installs.
+  tags:
+    - base
+    - debian-only
+  when: os_family == "debian"
+  block:
+    - name: Debian Sepcific Installs
+      ansible.builtin.apt:
+        name:
+          - python3-pip
+          - python3-venv
+        state: present

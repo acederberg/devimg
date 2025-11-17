@@ -1,0 +1,4 @@
+# vi: set ft=yaml.ansible :
+- name: Install Kitty
+  ansible.builtin.include_tasks:
+    file: "./kitty.yaml"

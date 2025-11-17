@@ -1,0 +1,51 @@
+# vi: set ft=yaml.ansible :
+#
+# - name: Add NVM
+#   hosts: all
+#   tasks:
+#     - name: Get NVM Installer
+#       ansible.builtin.get_url:
+#         url: https://raw.githubusercontent.com/nvm-sh/nvm/refs/tags/v0.40.3/install.sh
+#         checksum: 2d8359a64a3cb07c02389ad88ceecd43f2fa469c06104f92f98df5b6f315275f
+#         dest: "{{ user.homedir }}/ansible/install-nvm.sh"
+#     - name: Run NVM Installer
+#       if: ""
+#       ansible.builtin.shell: bash "{{ user.homedir }}/ansible/install-nvm.sh"
+# - name: Add PyEnv
+#   hosts: all
+#   tasks:
+#     - name: Get PyEnv Installer
+#       ansible.builtin.git:
+#         repo: https://github.com/pyenv/pyenv.git
+#         clone: yes
+#         dest: "{{ user.homedir }}/.pyenv"
+#         depth: 1
+#         version: v2.6.8
+#     - name: What was I supposed to do with this git repository?
+- name: "Package Manager Installs"
+  tags:
+    - basic
+  ansible.builtin.include_tasks:
+    file: ./base.yaml
+- name: "Binary Installs"
+  tags:
+    - installs
+    - quarto
+    - devops
+    - golang
+    - argocd
+    - kubectl
+    - helm
+    - terraform
+  ansible.builtin.include_tasks:
+    file: ./prebuilt.yaml
+- name: "Local Builds"
+  tags:
+    - builds
+    - installs
+    - neovim
+    - lua
+    - luarocks
+    - luajit
+  ansible.builtin.include_tasks:
+    file: ./builds.yaml

@@ -1,15 +1,5 @@
 # vi: set ft=yaml.ansible :
-- name: "Create the Ansible Directory"
-  hosts:
-    - debian
-    - redhat
-  tasks:
-    - name: "Setup Context."
-      ansible.builtin.include_tasks: "./context.yaml"
 - name: Build Neovim
-  hosts:
-    - debian
-    - redhat
   tags:
     - build
     - installs
@@ -17,7 +7,7 @@
   vars:
     neovim_binary: "/usr/local/bin/nvim"
     neovim_git: "{{ artifacts.repos }}/neovim"
-  tasks:
+  block:
     - name: Check Neovim Install
       ansible.builtin.stat:
         path: "{{ neovim_binary }}"
@@ -28,7 +18,7 @@
         - name: Clone the repo
           ansible.builtin.git:
             repo: https://github.com/neovim/neovim.git
-            clone: yes
+            clone: true
             dest: "{{ neovim_git }}"
             depth: 1
         - name: Make Build
@@ -40,9 +30,6 @@
             chdir: "{{ neovim_git }}"
             target: install
 - name: Install LuaJIT
-  hosts:
-    - redhat
-    - debian
   tags:
     - build
     - installs
@@ -51,7 +38,7 @@
   vars:
     luajit_git: "{{ artifacts.repos }}/luajit"
     luajit_binary: /usr/local/bin/luajit
-  tasks:
+  block:
     - name: Check Install LuaJit
       ansible.builtin.stat:
         path: "{{ luajit_binary }}"
@@ -73,9 +60,6 @@
             chdir: "{{ luajit_git }}"
             target: "install"
 - name: Install Luarocks
-  hosts:
-    - redhat
-    - debian
   tags:
     - lua
     - build
@@ -85,7 +69,7 @@
     luarocks_git: "{{ artifacts.repos }}/luarocks"
     luarocks_binary: /usr/local/bin/luarocks
     luarocks_configure: "{{ luarocks_git }}/configure"
-  tasks:
+  block:
     - name: Check Install
       ansible.builtin.stat:
         path: "{{ luarocks_binary }}"
@@ -115,9 +99,6 @@
             chdir: "{{ luarocks_git }}"
             target: install
 - name: Install Neovim Configuration
-  hosts:
-    - redhat
-    - debian
   become: true
   tags:
     - build
@@ -126,7 +107,7 @@
   vars:
     neovim_config_path: /home/{{ primary_user }}/.config/nvim
     neovim_config_entrypoint: "{{ neovim_config_path }}/init.lua"
-  tasks:
+  block:
     - name: Check Installed Neovim Configuration
       ansible.builtin.stat:
         path: "{{ neovim_config_entrypoint }}"
@@ -148,7 +129,7 @@
         - name: Clone
           ansible.builtin.git:
             repo: https://github.com/acederberg/nvim-ez.git
-            clone: yes
+            clone: true
             depth: 1
             dest: "{{ neovim_config_path }}"
     - name: Chown

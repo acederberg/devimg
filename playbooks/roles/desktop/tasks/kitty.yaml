@@ -1,0 +1,46 @@
+# vi: set ft=yaml.ansible :
+- name: Install Kitty
+  tags:
+    - tools
+    - installs
+    - kitty
+  vars:
+    kitty_archive_name: "kitty-{{tools.kitty.version}}-{{ ansible_architecture }}.txz"
+    kitty_url: "https://github.com/kovidgoyal/kitty/releases/download/v{{ tools.kitty.version }}/{{ kitty_archive_name }}"
+    kitty_archive_dest: "{{ artifacts.base }}/{{ kitty_archive_name }}"
+  block:
+    - name: "Check Kitty Install"
+      ansible.builtin.stat:
+        path: "/usr/local/bin/kitty"
+      register: kitty_binaries_stat
+    - name: "Install Kitty"
+      when: not kitty_binaries_stat.stat.exists
+      block:
+        - name: "Download Kitty"
+          ansible.builtin.get_url:
+            url: "{{ kitty_url }}"
+            checksum: "{{ tools.kitty.checksum }}"
+            mode: '0644'
+            dest: "{{ kitty_archive_dest }}"
+        - name: Ensure Kitty Directory
+          become: true
+          ansible.builtin.file:
+            state: "directory"
+            path: /opt/kitty
+            mode: "1644"
+        - name: "Provide Kitty Binaries."
+          become: true
+          ansible.builtin.unarchive:
+            remote_src: true
+            src: "{{ kitty_archive_dest }}"
+            dest: "/opt/kitty"
+            creates: /opt/kitty/bin
+        - name: "Link Kitty Binaries"
+          become: true
+          ansible.builtin.file:
+            state: "link"
+            src: "/opt/kitty/bin/{{ item }}"
+            dest: "/usr/local/bin/{{ item }}"
+          loop:
+            - kitty
+            - kitten

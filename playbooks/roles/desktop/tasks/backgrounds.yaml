@@ -1,22 +1,5 @@
 # vi: set ft=yaml.ansible :
-# DESKTOP CUSTOMIZATION
-# TODO(acederberg): ROLE
-- name: Set Context
-  hosts:
-    - localhost
-    # - redhat
-  tags:
-    - backgrounds
-    - desktop
-  tasks:
-    - name: Include Context
-      ansible.builtin.include_tasks:
-        file: ./context.yaml
 - name: Configure Backgrounds
-  gather_facts: false
-  hosts:
-    - localhost
-    # - redhat
   vars:
     gnome_background_properties: /usr/share/gnome-background-properties
     dconf_local_d: /etc/dconf/db/local.d
@@ -27,7 +10,7 @@
   tags:
     - backgrounds
     - desktop
-  tasks:
+  block:
     - name: Add Backgrounds
       block:
         - name: Get all of the background paths
