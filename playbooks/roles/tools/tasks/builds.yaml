@@ -88,12 +88,13 @@
         - name: Set LuaRocks Configure
           ansible.builtin.file:
             path: "{{ luarocks_git }}/configure"
-            mode: "0744"
+            mode: "0755"
         - name: Configure LuaRocks
           ansible.builtin.shell: "bash {{ luarocks_configure }}"
         - name: Make Build LuaRocks
           ansible.builtin.make:
             chdir: "{{ luarocks_git }}"
+
         - name: Make Install LuaRocks
           ansible.builtin.make:
             chdir: "{{ luarocks_git }}"
@@ -137,5 +138,5 @@
         dest: "{{ neovim_config_path }}"
         owner: "{{ primary_user }}"
         group: "{{ primary_user }}"
-        mode: "0744"
+        mode: "0755"
         recurse: true

@@ -1,0 +1,54 @@
+---
+title: Ansible Notes
+---
+
+```{=html}
+<div class="py-1 w-100 d-flex">
+  <img style="max-height: 256px;"  class="mx-auto" src="https://github.com/ansible/logos/blob/main/community-marks/Ansible-Community-Mark-Mango.png?raw=true"/>
+</div>
+```
+
+::: { .callout-note }
+
+Thank you to [Jeff Pullen](https://github.com/jeffcpullen) for the guidence and recommendations!
+
+:::
+
+# Resources and Reading
+
+- [Ansible for Devops](https://www.ansiblefordevops.com/)
+- [Good practices](https://redhat-cop.github.io/automation-good-practices/) - More opinionated than 'good practices'.
+- [Best practices](https://docs.ansible.com/ansible/2.8/user_guide/playbooks_best_practices.html) - Less opinionated than 'good practices'.
+- [Molecule ](https://ansible.readthedocs.io/projects/molecule) - A Testing Framework for Ansible.
+- [Content Organization](https://docs.ansible.com/ansible/2.8/user_guide/playbooks_best_practices.html#content-organization) - How to properly structure an ansible repository.
+- [Red hat System Roles](https://access.redhat.com/articles/3050101) - Roles for automating tasks on `RHEL` machines.
+- [FreeIPA](https://github.com/freeipa/ansible-freeipa) - Redhat offers a version called IdM.
+- [About Ansible Creator](https://ansible.readthedocs.io/projects/creator/installing/#cli-usage)
+
+# Recommended VSCode Setup
+
+## Windows Specific Steps
+
+0. [Install python](https://www.python.org/downloads/).
+   Verify the `python` installation by running `python --version`.
+   Verify that `python` has `pip` installed by running `pip --version`.
+
+## General Steps
+
+0. Install VSCode for [Linux](https://code.visualstudio.com/docs/setup/linux) or
+   [Windows](https://code.visualstudio.com/docs/setup/windows).
+1. Run `pip install ansible ansible-creator ansible-lint ansible-dev-tools`.
+2. Add the redhat `yaml` and `ansible` extensions (check that the publisher is
+   ansible).
+
+# Starting a New Project in VSCode
+
+## Determine Which Kind of Project Is to be Made
+
+To make reusable components for others to use contribute to an existing collection
+or create it yourself.
+
+Generally roles should not be kept in the same repo as the playbooks and inventories,
+they should be their own repos for sake of reusability.
+
+1. Look for the ansible icon on the left hand side of VSCode and click it.
