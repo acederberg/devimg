@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/ansible/ansible-lint/main/src/ansiblelint/schemas/execution-environment.json#/$defs/v3
+#
+# NOTE(acederberg): Starting directly from the tutorial.
+#
+version: 3
+dependencies:
+  galaxy: requirements.yaml
+  python: requirements.txt
+  python_interpreter:
+    # NOTE(acederberg): Specific to `fedora:43`.
+    package_system: python3
+  ansible_core:
+    package_pip: ansible-core
+  ansible_runner:
+    package_pip: ansible-runner
+  system:
+    - openssh-clients
+    - pkgconfig
+    - libvirt-devel
+images:
+  base_image:
+    name: registry.fedoraproject.org/fedora:43
+options:
+  # NOTE(acederberg): The user option requires that the user exists in the image.
+  #                   This image defaults to a nameless user with uid=1000 gid=0
+  tags:
+    - registry.acederberg.io/devimg/execution-environment:0.1.0
+  workdir: /opt/devimg

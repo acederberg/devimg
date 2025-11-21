@@ -1,27 +1,16 @@
 services:
-  bootc:
-    container_name: bootc
-    tty: true
-    privileged: true
-    security_opt:
-      - label=type:unconfied__t
+  traefik:
+    image: traefik/traefik
+    ports:
+      - 443
+      - 80
+      - 9000
+      # volumes:
+  nexus:
+    image: sonatype/nexus3
+    ports:
+      - 8081
     volumes:
-      - type: bind
-        source: ../.images
-        target: /opt/images
-      - type: bind
-        source: ../.bootc-outputs
-        target: /output
-      - type: bind
-        source: /var/lib/containers/storage
-        target: /var/lib/containers/storage
-    # image: quay.io/centos-bootc/centos-bootc:stream9
-    image: registry.redhat.io/rhel9/bootc-image-builder
-    configs:
-      - source: bootc
-        target: /config.toml
-    entrypoint: bash
-configs:
-  bootc:
-    name: bootc-config
-    file: ./bootc.toml
+      - nexus-data:/nexus-data
+volumes:
+  nexus-data:

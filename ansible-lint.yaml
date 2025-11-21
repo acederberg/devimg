@@ -1,0 +1,5 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/ansible/ansible-lint/main/src/ansiblelint/schemas/ansible-lint-config.json
+#
+# NOTE(acederberg): Learn more about ansible lint and how to configure it: https://docs.ansible.com/projects/lint/configuring/
+
+

@@ -1,0 +1,12 @@
+/*-- scss:rules --*/
+
+figure {
+  $padding-y: map-get($spacers, 4);
+  $padding-x: map-get($spacers, 3);
+
+  background: var(--bs-gray-100);
+  padding-top: $padding-y;
+  padding-bottom: $padding-y;
+  padding-left: $padding-x;
+  padding-right: $padding-x;
+}

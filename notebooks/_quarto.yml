@@ -13,10 +13,12 @@ website:
         text: Libvirt
       - href: ./rhel.qmd
         text: RHEL
+      - href: "./ansible.qmd"
+        text: About Ansible
 format:
   html:
     theme:
       - cosmo
       - brand
-    css: styles.css
+      - index.scss
     toc: true
