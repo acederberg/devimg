@@ -15,8 +15,13 @@ dependencies:
     package_pip: ansible-runner
   system:
     - openssh-clients
+    # NOTE(acederberg): It is possible just to use `python3-libvirt` to avoid
+    #                   building when installing from wheel. However, this will
+    #                   make `poetry.toml` less clean overall.
     - pkgconfig
     - libvirt-devel
+    - python3-devel
+    - gcc
 images:
   base_image:
     name: registry.fedoraproject.org/fedora:43
