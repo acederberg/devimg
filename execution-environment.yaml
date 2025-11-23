@@ -18,6 +18,13 @@ dependencies:
     # NOTE(acederberg): It is possible just to use `python3-libvirt` to avoid
     #                   building when installing from wheel. However, this will
     #                   make `poetry.toml` less clean overall.
+    #
+    #                   The execution environment contains the stack to mount
+    #                   a libvirt socket, but the objective is to allow the EE
+    #                   to ssh into the libvirt host. In the case that the
+    #                   EE container host is also the libvirt host, the EE
+    #                   should just have a straight up connection to the host
+    #                   without any additional configuration.
     - pkgconfig
     - libvirt-devel
     - python3-devel
@@ -28,6 +35,12 @@ images:
 options:
   # NOTE(acederberg): The user option requires that the user exists in the image.
   #                   This image defaults to a nameless user with uid=1000 gid=0
+  user: ansible-user
   tags:
     - registry.acederberg.io/devimg/execution-environment:0.1.0
-  workdir: /opt/devimg
+additional_build_steps:
+  append_final:
+    - RUN groupadd --gid 1000 ansible-user
+    - RUN useradd --gid 1000  --uid 1000 --groups root --password ansible-user ansible-user
+    - RUN mkdir /home/ansible-user/.ansible
+    - RUN chown -R ansible-user:ansible-user /home/ansible-user

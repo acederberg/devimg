@@ -1,0 +1,15 @@
+# yaml-language-server: $schema=https://github.com/ansible/ansible-lint/raw/refs/heads/main/src/ansiblelint/schemas/ansible-navigator-config.json
+ansible-navigator:
+  execution-environment:
+    image: registry.acederberg.io/devimg/execution-environment:0.1.0
+    pull:
+      policy: "never"
+    enabled: true
+    volume-mounts:
+      - src: ~/.ansible/vault/devimg
+        dest: /home/ansible-user/.ansible/vault/devimg
+  format: yaml
+  exec:
+    command: ansible-playbook test.yaml
+  editor:
+    command: vim

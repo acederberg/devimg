@@ -1,0 +1,26 @@
+# vi: set ft=yaml.ansible :
+#
+# NOTE(acederberg): There pattern I will be using will require that the execution
+#                   environment ssh into the KVM host and spin up some virtual
+#                   machines. It is also possible to mount the socket on the
+#                   EE and invoke libvirt directly.
+#
+#                   It turns out that navigator mounts the ssh-agent from the 
+#                   container host into the container itself. 
+#
+- name: Install Depends for LibVirt Host
+  hosts: libvirt
+  tasks:
+    - name: "Ensure Package Dependencies are Installed."
+      ansible.builtin.package:
+        name:
+          - python3
+          - python3-pip
+          - python3-libvirt
+          - libvirt-qemu
+          - libvirt-daemon-kvm
+          - libguestfs-tools
+          - qemu-img
+          - qemu-kvm
+
+# - name: Download and Construct the Various Images.
