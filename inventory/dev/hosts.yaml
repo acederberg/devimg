@@ -6,8 +6,9 @@
 #                   sense.
 #
 libvirt:
-  localhost:
-    ansible_connection: localhost
+  hosts:
+    localhost:
+      ansible_connection: local
 #
 # NOTE(acederberg): These target machines will be generated dynamically by
 #                   libvirt. This section is here mostly for the sake of this

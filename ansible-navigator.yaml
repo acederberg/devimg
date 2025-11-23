@@ -10,6 +10,6 @@ ansible-navigator:
         dest: /home/ansible-user/.ansible/vault/devimg
   format: yaml
   exec:
-    command: ansible-playbook test.yaml
+    command: ansible-playbook playbooks/test.yaml
   editor:
     command: vim

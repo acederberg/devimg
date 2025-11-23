@@ -1,5 +1,5 @@
 - name: Gather and print local facts
-  hosts: localhost
+  hosts: libvirt
   gather_facts: true
   tasks:
     - name: Print facts

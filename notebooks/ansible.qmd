@@ -56,6 +56,29 @@ they should be their own repos for sake of reusability.
 
 # Deeper LSP Feedback
 
+::: { .callout-tip collapsed=true }
+
+## Getting Shell Completion
+
+In addition to the quality of life improvements described in this section,
+it is possible to get shell completions in `bash` or `zsh` with [`argcomplete`](https://docs.ansible.com/projects/ansible/devel/installation_guide/intro_installation.html#shell-completion).
+To add, simply execute the instructions shown in @fig-argcomplete.
+
+::: { #fig-argcomplete }
+
+```sh
+pip install argcomplete --user
+activate-global-python-argcomplete --user
+```
+
+Instructions for the installation of argcomplete.
+It can be helpful to add this to execution environments since it might not be
+desirable to keep these dependencies on the host.
+
+:::
+
+:::
+
 I am generally unaware of the ansible development experience inside of VSCode
 and other tools as my editor of choice is `neovim` since I love the terminal
 driven workflow.
@@ -73,29 +96,8 @@ as in @fig-yaml-modeline.
 
 ::: {#fig-yaml-modeline}
 
-```yaml
-# yaml-language-server: $schema=https://raw.githubusercontent.com/ansible/ansible-lint/main/src/ansiblelint/schemas/execution-environment.json#/$defs/v3
-version: 3
-dependencies:
-  galaxy: requirements.yml
-  python: pyproject.toml
-  python_interpreter:
-    # NOTE(acederberg): Specific to `fedora:43`.
-    python_path: /bin/python3.14
-  ansible_core:
-    package_pip: ansible-core
-  ansible_runner:
-    package_pip: ansible-runner
-  system:
-    - openssh-clients
-images:
-  base_image:
-    name: registry.fedoraproject.org/fedora:43
-options:
-  user: ansible
-  tags:
-    - registry.acederberg.io/devimg/execution-environment:0.1.0
-  workdir: /opt/devimg
+```{.yaml include="../execution-environment.yaml"}
+
 ```
 
 Use of a modeline to tell `yaml-language-server` which schema to validate the
@@ -172,17 +174,31 @@ poetry export > requirements.txt
 The various playbooks inside of an ansible project can be invoked using the
 container image that was built in the previous step.
 This can be done using the `ansible-navigator` command as in @fig-navigator.
+Additionally, it is possible to configure the navigator to have a default
+entrypoint using `ansible-navigator.yaml` as in @fig-navigator-config.
 
 ::: { #fig-navigator }
 
 ```sh
 ansible-navigator run \
   --execution-environment <name-of-my-execution-environment-here> \
-  --o
+  --mode stdoutt \
+  test.yaml
 ```
+
+How to execute an arbitrary playbook with `ansible-navigator` _(in this case it is `test.yaml`)_.
 
 :::
 
-```sh
+::: { #fig-navigator-config }
+
+```{ .yaml include="../ansible-navigator.yaml"}
 
 ```
+
+Default entrypoint for `ansible-navigator` for this project. This can be invoked with
+`ansible-navigator exec` - it is also possible to obtain a shell within the
+execution environment like `ansible-navigator exec /bin/bash` _(though the shell
+might change depending on the base image used.)_.
+
+:::
