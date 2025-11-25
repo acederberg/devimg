@@ -1,0 +1,36 @@
+# vi: set ft=yaml.ansible :
+- name: Prepare SSH Keys for the Execution Environment
+  hosts: localhost
+  vars:
+    exec_env:
+      path: ".exec-env"
+      ssh:
+        name: "{{ ansible_user_id }}@{{ ansible_hostname }}"
+        path: "{{ exec_env.path }}/ssh"
+  tasks:
+    - name: "Prepare the Directory"
+      ansible.builtin.file:
+        path: "{{ exec_env.ssh.path }}"
+        mode: "775"
+        owner: "{{ ansible_user_id }}"
+        group: "{{ ansible_user_id }}"
+        state: "directory"
+    - name: "Create the keypair."
+      community.crypto.openssh_keypair:
+        path: "{{ exec_env.ssh.path }}/execution-environment"
+        mode: "600"
+        backend: cryptography
+        type: ed25519
+        owner: "{{ ansible_user_id }}"
+        group: "{{ ansible_user_id }}"
+        state: present
+        comment: "{{ exec_env.ssh.name }}"
+      register: _keypair
+    - ansible.builtin.set_fact:
+        _pubkey: "{{ _keypair.public_key }} {{ exec_env.ssh.name }}"
+    - name: "Add to Authorized Hosts."
+      ansible.builtin.authorized_key:
+        key: "{{ _pubkey }}"
+        state: present
+        user: "{{ ansible_user_id }}"
+        manage_dir: false

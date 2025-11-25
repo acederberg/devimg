@@ -28,6 +28,7 @@ dependencies:
     - pkgconfig
     - libvirt-devel
     - python3-devel
+    - python3-libvirt
     - gcc
 images:
   base_image:

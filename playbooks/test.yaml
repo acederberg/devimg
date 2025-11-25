@@ -1,7 +1,15 @@
+# vi: set ft=yaml.ansible :
 - name: Gather and print local facts
   hosts: libvirt
   gather_facts: true
   tasks:
-    - name: Print facts
+    - name: "Print Facts"
+      debug:
+        msg: "Connected as {{ ansible_user_id }}@{{ ansible_hostname }}"
+    - name: Get Running Virtual Machines.
+      community.libvirt.virt:
+        command: list_vms
+      register: libvirt_vms
+    - name: Print Running Virtual Machines.
       ansible.builtin.debug:
-        var: ansible_facts
+        var: libvirt_vms

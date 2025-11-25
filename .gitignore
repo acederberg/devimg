@@ -8,3 +8,5 @@
 context
 test-artifact-*.json
 *.log
+.ssh
+.exec-env

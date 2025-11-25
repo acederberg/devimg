@@ -6,9 +6,19 @@
 #                   sense.
 #
 libvirt:
+  vars:
+    os_family: "debian"
   hosts:
-    localhost:
-      ansible_connection: local
+    dev:
+      # NOTE(acederberg): This configuration is for the container to reach the
+      #                   containerization host (which is also the virtual
+      #                   machine host). Verify that this works by running the 
+      #                   `test` playbook.
+      ansible_host: host.docker.internal
+      ansible_user: adrian
+      ansible_connection: ssh
+      ansible_ssh_private_key_file: "~/.ssh/execution-environment"
+      ansible_python_interpreter: /bin/python3
 #
 # NOTE(acederberg): These target machines will be generated dynamically by
 #                   libvirt. This section is here mostly for the sake of this

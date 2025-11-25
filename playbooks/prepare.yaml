@@ -5,22 +5,41 @@
 #                   machines. It is also possible to mount the socket on the
 #                   EE and invoke libvirt directly.
 #
-#                   It turns out that navigator mounts the ssh-agent from the 
-#                   container host into the container itself. 
+#                   It turns out that navigator mounts the ssh-agent from the
+#                   container host into the container itself.
 #
 - name: Install Depends for LibVirt Host
   hosts: libvirt
   tasks:
+    # NOTE(acederberg): Goal is to use the system python. This is a pain in the
+    #                   ass when running against my dev machine.
     - name: "Ensure Package Dependencies are Installed."
-      ansible.builtin.package:
-        name:
-          - python3
-          - python3-pip
-          - python3-libvirt
-          - libvirt-qemu
-          - libvirt-daemon-kvm
-          - libguestfs-tools
-          - qemu-img
-          - qemu-kvm
-
-# - name: Download and Construct the Various Images.
+      become: true
+      block:
+        - name: Install Dependencies for Debian Like Systems
+          when: os_family == "debian"
+          ansible.builtin.apt:
+            name:
+              - pkg-config
+              - python3
+              - python3-pip
+              - python3-dev
+              - qemu-system
+              - libvirt-daemon-system
+              - libvirt-dev
+              - openssh-server
+        - name: "Install Dependencies for CentOS Like Systems"
+          ansible.builtin.dnf:
+            name:
+              - pkg-config
+              - python3
+              - python3-pip
+              - libvirt-qemu
+              - libvirt-daemon-kvm
+              - libguestfs-tools
+              - qemu-img
+              - qemu-kvm
+              - open-sshserver
+    - name: "Install Libvirt Python"
+      ansible.builtin.pip:
+        name: python3-libvirt

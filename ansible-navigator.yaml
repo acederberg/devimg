@@ -8,6 +8,15 @@ ansible-navigator:
     volume-mounts:
       - src: ~/.ansible/vault/devimg
         dest: /home/ansible-user/.ansible/vault/devimg
+      - src: ./playbooks/.exec-env/ssh
+        dest: /home/ansible-user/.ssh
+      - src: ./playbooks/.exec-env/bash_history
+        dest: /home/ansible-user/.bash_history
+    container-options:
+      # NOTE(acederberg): Needed for ssh from container into host. It is necessary
+      #                   to run the `prepare` playbook to setup the sshkeys needed.
+      #                   To get into the container, ssh username@host.docker.internal
+      - --add-host=host.docker.internal=172.17.0.1
   format: yaml
   exec:
     command: ansible-playbook playbooks/test.yaml
