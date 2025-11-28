@@ -8,6 +8,7 @@ libvirt:
     password_crypt: JDYkNnN4Lm9zTDd2cEFZVmZiSCRxbjZNdTBQMFZjUkFxY0x6REtoeUE2ZThxQ3F5cUZLUDlBZ3hwNzBNWFcuNHlpcXlLUEVWeUVUOS9IL2RGeHdiemFySC9IcXRFR0xwMEV2eEtUMW5rLgo=
   domains:
     - name: devim-rhel-10
+      enabled: false
       customize: false
       image: null
       bootc:
@@ -22,6 +23,7 @@ libvirt:
           password_crypt: JDYkeTIzRGx0LzFmODB1LzdMSCQ1TlF1LnFFT0RQeTM4ZDRuZnAvV25hekhXWERodFVZYWNHNUl3VnQvWUZ0eVh1MDJORFk1eEhvMTZybklFSzFPa3hxYkRMSm4yQmlpbXVOdDdnSU1MMQo=
           sshpubkey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKrQPues3Mc/7exenjylqV9Rae+RklrLB9Rz3hgRLEKB adrn.cederberg123@gmail.com"
     - name: 'devimg-debian-13'
+      enabled: false
       memory: 4096
       bootc: null
       image:
@@ -34,6 +36,7 @@ libvirt:
       init:
         !!merge <<: *init
     - name: 'ubuntu-24.04'
+      enabled: true
       memory: 4096
       image:
         kind: cloud
