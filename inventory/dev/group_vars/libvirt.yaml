@@ -1,11 +1,27 @@
 # NOTE(acederberg): Configuration for the libvirt host.
+users:
+  - username: acederberg
+    uid: 1000
+    gid: 1000
+    super: true
+    fullname: Adrian Cederberg
+    # NOTE(acederberg): Generate passwords with `openssl passwd -6 ... | base64 --encodee`
+    password_crypt: JDYkeTIzRGx0LzFmODB1LzdMSCQ1TlF1LnFFT0RQeTM4ZDRuZnAvV25hekhXWERodFVZYWNHNUl3VnQvWUZ0eVh1MDJORFk1eEhvMTZybklFSzFPa3hxYkRMSm4yQmlpbXVOdDdnSU1MMQo=
+    ssh:
+      authorized_keys:
+        - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKrQPues3Mc/7exenjylqV9Rae+RklrLB9Rz3hgRLEKB adrn.cederberg123@gmail.com"
+  - username: ansible
+    fullname: Ansible Service Account
+    uid: 1001
+    gid: 1001
+    super: true
+    password_crypt: JDYkNnN4Lm9zTDd2cEFZVmZiSCRxbjZNdTBQMFZjUkFxY0x6REtoeUE2ZThxQ3F5cUZLUDlBZ3hwNzBNWFcuNHlpcXlLUEVWeUVUOS9IL2RGeHdiemFySC9IcXRFR0xwMEV2eEtUMW5rLgo=
+    ssh: null
 libvirt:
   network:
     name: 'devimg'
     bridge: virbr10
-  ansible:
-    username: ansible
-    password_crypt: JDYkNnN4Lm9zTDd2cEFZVmZiSCRxbjZNdTBQMFZjUkFxY0x6REtoeUE2ZThxQ3F5cUZLUDlBZ3hwNzBNWFcuNHlpcXlLUEVWeUVUOS9IL2RGeHdiemFySC9IcXRFR0xwMEV2eEtUMW5rLgo=
+  # NOTE(acederberg): See the argspec for the `vms` role.
   domains:
     - name: devim-rhel-10
       enabled: false
@@ -14,14 +30,6 @@ libvirt:
       bootc:
         base: registry.redhat.io/rhel10/rhel-bootc@sha256:d4412e23331784349e41ceb253b1efebb3f57f1b3d7e7799c8c6e422d8008109
       memory: 4096
-      init: &init
-        # NOTE(acederberg): Generate passwords with `openssl passwd -6 ... | base64 --encodee`
-        #                   `base64` encoding is necessary because there are `$`s inside of openssl's output.
-        user:
-          username: acederberg
-          fullname: Adrian Cederberg
-          password_crypt: JDYkeTIzRGx0LzFmODB1LzdMSCQ1TlF1LnFFT0RQeTM4ZDRuZnAvV25hekhXWERodFVZYWNHNUl3VnQvWUZ0eVh1MDJORFk1eEhvMTZybklFSzFPa3hxYkRMSm4yQmlpbXVOdDdnSU1MMQo=
-          sshpubkey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKrQPues3Mc/7exenjylqV9Rae+RklrLB9Rz3hgRLEKB adrn.cederberg123@gmail.com"
     - name: 'devimg-debian-13'
       enabled: false
       memory: 4096
@@ -30,20 +38,31 @@ libvirt:
         kind: cloud
         src: https://cloud.debian.org/images/cloud/trixie/20250924-2245/debian-13-nocloud-amd64-20250924-2245.qcow2
         checksum: sha512:f88bdcec45b37f5a504b3c1d1f153086ec93f57ac7c691d05a8e912d25f9ba1afaa8152771b0912ff62177fc4169c51710185ec598afc28f9e5b781fcc2b96bb
-        dest: /var/lib/libvirt/images/debian-13-nocloud-amd64-cloudinit.qcow2
+        # dest: /var/lib/libvirt/images/debian-13-nocloud-amd64-cloudinit.qcow2
         desired_size: 100 GB
         os_family: debian
-      init:
-        !!merge <<: *init
     - name: 'ubuntu-24.04'
-      enabled: true
+      enabled: false
       memory: 4096
       image:
         kind: cloud
         src: https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
-        dest: /var/lib/libvirt/images/noble-server-cloudimg-amd64.img
+        # dest: /var/lib/libvirt/images/noble-server-cloudimg-amd64.img
         checksum: sha256:90e7faff7df5f50943089df57782c0d1d88938f86bd89520867c5955fe26bc81
         desired_size: 100 GB
         os_family: debian
-      init:
-        !!merge <<: *init
+    - name: 'fedora-kde-43'
+      enabled: false
+      memory: 4096
+      image:
+        kind:
+        src: https://download.fedoraproject.org/pub/fedora/linux/releases/43/KDE/x86_64/iso/Fedora-KDE-Desktop-Live-43-1.6.x86_64.iso
+        checksum:
+    - name: 'centos-43'
+      enabled: true
+      memory: 4096
+      image:
+        kind: cloud
+        src: https://cloud.centos.org/centos/10-stream/x86_64/images/CentOS-Stream-GenericCloud-x86_64-10-20251124.0.x86_64.qcow2
+        checksum: sha256:03b4edf9e13d09c5c41499508ff410e1be840670598da8904ca25de3f9e196ee
+        os_family: centos

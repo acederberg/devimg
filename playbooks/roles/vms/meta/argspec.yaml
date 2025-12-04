@@ -1,0 +1,110 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/ansible/ansible-lint/refs/heads/main/src/ansiblelint/schemas/role-arg-spec.json
+argument_specs:
+  network:
+    description: "Start up a libvirt network."
+    options:
+      network: &option-network
+        type: dict
+        description: "Specification for a libvirt network."
+        options:
+          name:
+            type: str
+            description: A name for the network.
+  domain:
+    description: "Start up a libvirt domain on the specified network."
+    options: &option-user
+      users:
+        type: dict
+        description: "A list of specifications for users to provision."
+        options:
+          username:
+            type: str
+            description: The users username.
+          uid:
+            type: int
+          gid:
+            type: int
+          super:
+            type: bool
+            description: User can use sudo/other.
+          password_crypt:
+            type: str
+            description: Password for the user. Generated using `openssl passwd -6 | base64 --encode` ideally.
+          ssh:
+            type: dict
+            options:
+              authorized_keys:
+                type: list
+                elements: str
+                description: Public
+      network: *option-network
+      domain: &option-domain
+        type: dict
+        description: A specification for a libvirt machine.
+        options:
+          name:
+            type: str
+            description: A descriptive name for this virual machine specification.
+          image:
+            type: dict
+            options:
+              # kind:
+              #   type: str
+              #   options:
+              #     cloud:
+              src:
+                type: str
+                description: Url to the image.
+              checksum:
+                type: str
+                description: Checksum for the specified image.
+              dest:
+                type: str
+                description: Where should the image be output.
+              desired_size:
+                type: str
+                description: Max size of the resulting qcow.
+              os_family:
+                type: str
+                options:
+                  debian:
+                  centos:
+          enabled:
+            type: bool
+            description: Enable/disable this section. Disabled images will not be downloaded.
+          customize:
+            type: bool
+            description: ???
+          bootc:
+            type: dict
+            description: "Configuration for bootc images. Only takes effect when image is \nspeicified.\n"
+            options:
+              base:
+                type: str
+                description: Base Image
+          memory:
+            type: str
+  down:
+    options:
+      users: *option-user
+      domain: *option-domain
+  start:
+    options:
+      users: *option-user
+      domain: *option-domain
+  images:
+    options:
+      users: *option-user
+      domain: *option-domain
+  bootc:
+    options:
+      users: *option-user
+      domain: *option-domain
+  main:
+    options:
+      users: *option-user
+      network: *option-network
+      domains:
+        !!merge <<: *option-domain
+        type: list
+        elements: dict

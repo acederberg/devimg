@@ -34,12 +34,12 @@
               - pkg-config
               - python3
               - python3-pip
-              - libvirt-qemu
-              - libvirt-daemon-kvm
+              - libvirt
               - libguestfs-tools
+              - libguestfs-tools-c
               - qemu-img
               - qemu-kvm
-              - open-sshserver
+              - openssh-server
     - name: "Install Libvirt Python"
       ansible.builtin.pip:
         name: python3-libvirt

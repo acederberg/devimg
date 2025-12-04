@@ -2,4 +2,4 @@
 - name: Images.
   ansible.builtin.include_tasks: ./images.yaml
 - name: VMs.
-  ansible.builtin.include_tasks: ./virt/up.yaml
+  ansible.builtin.include_tasks: ./start.yaml

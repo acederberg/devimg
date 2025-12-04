@@ -1,0 +1,18 @@
+# vi: set ft=yaml.ansible :
+#
+# NOTE(acederberg): This is where all of the common setup steps should be defined.
+#
+- name: Setup
+  hosts: all
+  vars_files:
+    - main.yaml
+  tasks:
+    - name: Create Assets Directories.
+      ansible.builtin.file:
+        state: directory
+        path: "{{ item.value }}"
+        recurse: true
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '775'
+      with_dict: "{{ artifacts }}"

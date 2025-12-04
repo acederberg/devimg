@@ -1,0 +1,54 @@
+# vi: set ft=yaml.ansible :
+#
+# NOTE(acederberg): Generate SSH keys for ansible, set up hostnames, and verify connectivity.
+#
+# - name: Configure host
+#   hosts: localhost
+#   tasks:
+#     - name: Generate an sshkey for ansible
+#       block:
+#         - ansible.builtin.set_fact:
+#             ansible_sshkeys_dir: "{{ inventory_dir }}/.ssh"
+#             ansible_sshkeys: "{{ ansible_sshkeys_dir }}/ansible"
+#         - ansible.builtin.stat:
+#             path: "{{ ansible_sshkeys_dir }}"
+#           register: ansible_sshkeys_dir_status
+#         - ansible.builtin.shell: mkdir --parents {{ ansible_sshkeys_dir }}
+#           when: not ansible_sshkeys_dir_status.stat.exists
+#         - ansible.builtin.stat:
+#             path: "{{ ansible_sshkeys }}"
+#           register: ansible_sshkeys_stat
+#         - name: Create Keypair
+#           when: not ansible_sshkeys_stat.stat.exists
+#           community.crypto.openssh_keypair:
+#             path: "{{ ansible_sshkeys }}"
+#             mode: "0440"
+#             type: ed25519
+#             state: present
+#           register: ansible_sshkeys
+#         - name: Debug
+#           ansible.builtin.debug:
+#             var: ansible_sshkeys
+- name: Create Virtual Machines
+  hosts: libvirt
+  vars_files:
+    - main.yaml
+  tasks:
+    - name: "vms"
+      vars:
+        _domains: "{{ libvirt.domains | selectattr('enabled', 'eq', True) }}"
+      block:
+        # - ansible.builtin.debug:
+        #     var: domains
+        - name: "Get Images"
+          ansible.builtin.include_role:
+            name: "vms"
+            tasks_from: "images.yaml"
+          loop: "{{ _domains }}"
+          loop_control:
+            loop_var: domain
+
+# - name: Complete Test Seup
+#   hosts: localhost
+#   tasks:
+#     - ansible.builtin.include_tasks: virt-finalize.yaml

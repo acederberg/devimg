@@ -1,0 +1,4 @@
+_image:
+  name: "{{ domain.name }}-{{ domain.image.checksum }}.qcow2"
+  dest: "{{ artifacts.images }}/{{ _image.name }}"
+  dest_qemu: "/var/lib/libvirt/images/{{ _image.name }}"

@@ -2,14 +2,13 @@
 - name: Set Context
   hosts:
     - localhost
-    # - redhat
   tags:
     - backgrounds
     - desktop
   tasks:
     - name: Include Context
       ansible.builtin.include_tasks:
-        file: ./context.yaml
+        file: ./setup.yaml
 - name: Install Kitty
   hosts:
     - redhat
@@ -88,17 +87,17 @@
     - name: Install Brave
       when: not brave_stat.stat.exists
       block:
-      - name: Get Repofile
-        become: true
-        ansible.builtin.get_url:
-          url: https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo
-          dest: /etc/yum.repos.d/brave-browser.repo
-      - name: Install Brave
-        become: true
-        ansible.builtin.dnf:
-          update_cache: true
-          name: brave-browser
-          state: present
+        - name: Get Repofile
+          become: true
+          ansible.builtin.get_url:
+            url: https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo
+            dest: /etc/yum.repos.d/brave-browser.repo
+        - name: Install Brave
+          become: true
+          ansible.builtin.dnf:
+            update_cache: true
+            name: brave-browser
+            state: present
 # NOTE: See the instructions:
 - name: Install VSCode (Yucky!)
   hosts:
@@ -110,8 +109,7 @@
     - name: Check VSCode Installed
       ansible.builtin.stat:
         path: "{{vscode_bin }}"
-
-    - name : Install VSCode
+    - name: Install VSCode
       block:
         - name: Check ASC Install
           ansible.builtin.stat:
@@ -119,12 +117,8 @@
           register: vscode_asc_dest_stat
         - name: "Install ASC"
           block:
-          - name: Get the ASC
-            ansible.builtin.get_url:
-              url: https://packages.microsoft.com/keys/microsoft.asc
-              dest: "{{ vscode_asc }}"
-          - name: Copy the ASC into 
-
-
-
-
+            - name: Get the ASC
+              ansible.builtin.get_url:
+                url: https://packages.microsoft.com/keys/microsoft.asc
+                dest: "{{ vscode_asc }}"
+            - name: Copy the ASC into

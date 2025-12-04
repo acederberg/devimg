@@ -1,25 +1,8 @@
 # vi: set ft=yaml.ansible :
-# - name: Install depends
-#   hosts: localhost
-# pre_tasks:
-#   # https://www.redhat.com/en/blog/linux-golden-homelab-rhel
-#   - name: ""
-#     block:
-#       - when: false
-#         ansible.builtin.package:
-#           name:
-#             - cockpit-compose.noarch
-#             - osbuild-composer
-#             - composer-cli
-#             - cockpit
-#             - cockpit-composer
-#       - ansible.builtin.systemd:
-#           name:
-#             - osbuild-composer.socket
-#             - cockpit
-#             - cockpit.socket
-#           enabled: true
-#           state: started
+#
+# NOTE(acederberg): This set of tasks are to be used to generate a base image
+#                   from bootable contianers.
+#
 - name: Generate Compose Project.
   block:
     - name: Generate Templates

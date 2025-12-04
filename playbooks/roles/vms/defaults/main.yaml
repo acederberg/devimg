@@ -1,4 +1,1 @@
 # vi: set ft=yaml.ansible :
-image: domain.image
-dest_local: "{{ artifacts.images }}/{{ domain_name }}.qcow2"
-dest_qemu: "/var/lib/libvirt/images/{{ domain_name }}.qcow2"

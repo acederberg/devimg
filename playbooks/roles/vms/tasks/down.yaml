@@ -1,4 +1,7 @@
 # vi: set ft=yaml.ansible :
+#
+# NOTE(acederberg): These tasks should be used for cleanup.
+#
 - name: Include Domain Context.
   ansible.builtin.include_tasks: ../context.yaml
 - name: Inspect running domains.

@@ -1,0 +1,10 @@
+# vi: set ft=yaml.ansible :
+- name: Start Network
+  ansible.builtin.import_tasks:
+    file: "network.yaml"
+- name: Start Virtual Machines
+  ansible.builtin.include_tasks:
+    file: "domain.yaml"
+  loop: '{{ domains }}'
+  loop_control:
+    loop_var: domain

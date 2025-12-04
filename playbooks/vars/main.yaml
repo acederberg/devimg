@@ -1,0 +1,7 @@
+artifacts:
+  base: "{{ ansible_env.HOME }}/.devimg"
+  images: "{{ artifacts.base }}/images"
+  templated: "{{ artifacts.base }}/templated"
+  bootc: "{{ artifacts.base }}/bootc"
+  bootc_outputs: "{{ artifacts.base }}/bootc/outputs"
+  ssh: "{{ artifacts.base }}/ssh"

@@ -1,6 +1,9 @@
 # vi: set ft=yaml.ansible :
-- name: Include Domain Context.
-  ansible.builtin.include_vars: ./context.yaml
+- name: Set Facts.
+  ansible.builtin.include_vars:
+    file: vars/images.yaml
+- ansible.builtin.debug:
+    var: "_image"
 - name: Get or Download the Image
   block:
     # vi: set ft=yaml.ansible :
@@ -10,34 +13,36 @@
         - name: Download `{{ domain.name }}`
           ansible.builtin.get_url:
             url: '{{ domain.image.src }}'
-            dest: '{{ dest_local }}'
+            dest: '{{ _image.dest }}'
             checksum: '{{ domain.image.checksum }}'
             mode: '0644'
         - name: Customize with `virt-customize`.
           block:
+            - debug:
+                var: users
             - name: Generate the customization script.
               ansible.builtin.set_fact:
-                virt_customize_script: "{{ lookup('template', './libvirt/customize.sh.j2') }}"
+                _virt_customize_script: "{{ lookup('template', './libvirt/customize.sh.j2') }}"
             - name: Save the customization script.
               ansible.builtin.copy:
-                content: '{{ virt_customize_script }}'
+                content: '{{ _virt_customize_script }}'
                 dest: '{{ artifacts.templated }}/customize-{{ domain.name }}.sh'
                 mode: '0644'
-            - name: Run the Customization Script # noqa: 
+            - name: Run the Customization Script
               become: true
-              ansible.builtin.shell: "{{ virt_customize_script }}"
+              ansible.builtin.shell: "{{ _virt_customize_script }}"
     - name: "bl"
       ansible.builtin.include_tasks: ./bootc.yaml
       when: domain.bootc is not none
 - name: Provide the Image to Qemu
   become: true
   ansible.builtin.copy:
-    src: '{{ dest_local }}'
-    dest: '{{ dest_qemu }}'
+    src: '{{ _image.dest }}'
+    dest: '{{ _image.dest_qemu }}'
     owner: qemu
     group: qemu
     mode: '0640'
-- name: Resize Image
+- name: Resize Image For Qemu
   block:
     - name: Check size of `{{ domain.name }}` cloud image.
       block:
@@ -48,7 +53,7 @@
             cmd: |
               set -o pipefail
               qemu-img measure \
-                {{ dest_qemu }} \
+                {{ _image.dest_qemu }} \
                 --output=json \
               | jq '.["fully-allocated"]'
         - name: Compute Image Size Diff, Part 1
@@ -59,8 +64,10 @@
           when: image_size != image_size_desired
           ansible.builtin.set_fact:
             image_size_diff: '{{ image_size_desired - image_size }}'
-    - name: Resize image `{{ dest_qemu }}` for `{{ domain.name }}`.
+    - name: Resize image `{{ _image.dest_qemu }}` for `{{ domain.name }}`.
       when: image_size_diff > 0
       become: true
-      ansible.builtin.shell: qemu-img resize {{ dest_qemu }} +{{ image_size_diff }}
-      register: image_resize_sh
+      ansible.builtin.shell:
+        cmd: qemu-img resize {{ _image.dest_qemu }} +{{ image_size_diff }}
+        executable:
+      # register: image_resize_sh

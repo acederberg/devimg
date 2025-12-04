@@ -1,0 +1,19 @@
+{# vi: set ft=jinja : #}
+
+{# This command must be wrapped in single quotes to avoid problems with $ formatting #}
+firstboot_command='{% include './customize-first-boot.sh.j2' %}'
+virt-customize \
+  -a {{ _image.dest_qemu }} \
+  --root-password=password:root \
+  {% for user in users %} \
+  --run-command "useradd -m -s /bin/bash --uid "{{ user.uid }}" --gid "{{ user.gid }}" {{ user.username }}" \
+  {% endfor %} \
+  --firstboot-command "$firstboot_command" \
+  {% for user in users %} \
+    {% if user.ssh %} \
+      {% for pubkey in user.ssh.authorized_keys %}
+        --ssh-inject '{{ user.username }}:string:"{{ pubkey }}"' \
+      {% endfor %}
+    {% endif %} \
+  {% endfor %} \
+
